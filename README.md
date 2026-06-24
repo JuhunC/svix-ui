@@ -41,22 +41,47 @@ returns a real `{ url, token }` — but in OSS the `url` is a hardcoded placehol
 token is still very valuable because you can build your own UI."* That is
 precisely what this project does.
 
-## Repository layout (planned)
+## Quick start (Docker)
+
+The sample [`docker-compose.yml`](docker-compose.yml) runs the whole stack —
+svix-ui + svix-server + PostgreSQL + Redis:
+
+```bash
+# 1. start the backend (svix-server needs Postgres + Redis)
+SVIX_JWT_SECRET=change-me docker compose up -d postgres redis svix-server
+
+# 2. mint an admin token from the running server
+export SVIX_ADMIN_TOKEN=$(docker compose exec -T svix-server svix-server jwt generate | awk '{print $NF}')
+
+# 3. start the UI
+SVIX_JWT_SECRET=change-me \
+SVIX_UI_SESSION_SECRET=$(openssl rand -hex 32) \
+SVIX_UI_OPERATOR_PASSWORD=change-me \
+docker compose up -d svix-ui
+
+# 4. open http://localhost:3000 and sign in as admin / change-me
+```
+
+See [`.env.example`](.env.example) for every configuration variable.
+
+## Repository layout
 
 ```
 svix-ui/
-├── README.md                ← you are here
-├── docs/
-│   ├── RESEARCH.md          ← verified deep-dive on every Svix feature
-│   ├── PLAN.md              ← architecture, tech stack, container image, roadmap
-│   └── USE-CASES.md         ← end-to-end use-case scenarios for both personas
-├── apps/
-│   ├── web/                 ← React frontend (Operator Console + Consumer Portal)
-│   └── bff/                 ← backend-for-frontend (holds the admin JWT)
-├── packages/
-│   └── svix-client/         ← thin typed wrapper over the official svix SDK
-├── Dockerfile               ← builds the single `svix-ui` image
-└── docker-compose.example.yml  ← svix-server + svix-ui, ready to `up`
+├── docs/                    ← RESEARCH.md, PLAN.md, USE-CASES.md
+├── src/
+│   ├── app/
+│   │   ├── console/         ← operator console (admin JWT, server-side only)
+│   │   ├── portal/          ← consumer App Portal (app-scoped token)
+│   │   └── api/             ← BFF route handlers (admin + portal)
+│   ├── components/          ← React UI (Tailwind)
+│   └── lib/
+│       ├── svix/            ← typed REST client over svix-server
+│       ├── auth/            ← HMAC sessions + sealed portal cookies
+│       └── api/             ← BFF wrappers (withAdmin / withPortal)
+├── tests/integration/       ← end-to-end checks against a real svix-server
+├── Dockerfile               ← single multi-arch svix-ui image
+└── docker-compose.yml       ← svix-ui + svix-server + Postgres + Redis
 ```
 
 ## Quick mental model
@@ -67,11 +92,24 @@ Your customer ─▶ Consumer App Portal ─┐
 You (operator) ─▶ Operator Console  ──┘        (holds the admin JWT)
 ```
 
-## Start here
+## Documentation
 
 - **What Svix can do:** [`docs/RESEARCH.md`](docs/RESEARCH.md)
-- **How we'll build it:** [`docs/PLAN.md`](docs/PLAN.md)
-- **What it feels like to use:** [`docs/USE-CASES.md`](docs/USE-CASES.md)
+- **Architecture & roadmap:** [`docs/PLAN.md`](docs/PLAN.md)
+- **Use-case walkthroughs:** [`docs/USE-CASES.md`](docs/USE-CASES.md)
+
+## Development
+
+```bash
+npm install
+npm run dev            # http://localhost:3000 (needs SVIX_SERVER_URL + token)
+npm test               # unit + mocked-BFF tests
+npm run test:integration   # against a real svix-server (set SVIX_SERVER_URL + SVIX_ADMIN_TOKEN)
+npm run lint && npm run typecheck && npm run build
+```
+
+CI runs lint, typecheck, the test suite, a production build, and a job that
+boots a real `svix-server` and runs the integration suite against it.
 
 ## License
 

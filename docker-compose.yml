@@ -1,0 +1,77 @@
+# Sample deployment: svix-ui + svix-server + PostgreSQL + Redis.
+#
+# Quick start:
+#   1. cp .env.example .env   (or export the vars below)
+#   2. docker compose up -d postgres redis svix-server
+#   3. export SVIX_ADMIN_TOKEN=$(docker compose exec -T svix-server svix-server jwt generate)
+#   4. SVIX_ADMIN_TOKEN=$SVIX_ADMIN_TOKEN docker compose up -d svix-ui
+#   5. open http://localhost:3000  (sign in with the operator credentials below)
+
+services:
+  svix-ui:
+    build: .
+    # Or use the published image instead of building:
+    # image: ghcr.io/juhunc/svix-ui:latest
+    depends_on:
+      svix-server:
+        condition: service_started
+    environment:
+      SVIX_SERVER_URL: http://svix-server:8071
+      SVIX_ADMIN_TOKEN: "${SVIX_ADMIN_TOKEN:?run svix-server jwt generate and set SVIX_ADMIN_TOKEN}"
+      SVIX_UI_SESSION_SECRET: ${SVIX_UI_SESSION_SECRET:-please-change-this-session-secret}
+      SVIX_UI_OPERATOR_USERNAME: ${SVIX_UI_OPERATOR_USERNAME:-admin}
+      SVIX_UI_OPERATOR_PASSWORD: ${SVIX_UI_OPERATOR_PASSWORD:-change-me}
+      SVIX_UI_PUBLIC_URL: ${SVIX_UI_PUBLIC_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  svix-server:
+    image: svix/svix-server:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      WAIT_FOR: "true"
+      SVIX_DB_DSN: postgresql://postgres:postgres@postgres/postgres
+      SVIX_REDIS_DSN: redis://redis:6379
+      SVIX_JWT_SECRET: ${SVIX_JWT_SECRET:-please-change-this-jwt-secret}
+      SVIX_QUEUE_TYPE: redis
+      SVIX_CACHE_TYPE: redis
+      SVIX_LOG_LEVEL: info
+    ports:
+      - "8071:8071"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

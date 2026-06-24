@@ -31,8 +31,72 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit & integration tests
+      - name: Unit & integration (mocked) tests
         run: npm run test:coverage
 
       - name: Build
         run: npm run build
+
+  integration:
+    name: Integration (real svix-server)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      SVIX_JWT_SECRET: integration-test-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start svix-server
+        run: |
+          docker run -d --name svix-server --network host \
+            -e WAIT_FOR=true \
+            -e SVIX_DB_DSN=postgresql://postgres:postgres@localhost:5432/postgres \
+            -e SVIX_REDIS_DSN=redis://localhost:6379 \
+            -e SVIX_JWT_SECRET=$SVIX_JWT_SECRET \
+            -e SVIX_QUEUE_TYPE=redis \
+            -e SVIX_CACHE_TYPE=redis \
+            svix/svix-server:latest
+
+      - name: Wait for svix-server
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8071/api/v1/health || true)
+            if [ "$code" = "200" ] || [ "$code" = "204" ]; then echo "svix-server healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "svix-server did not become healthy"; docker logs svix-server; exit 1
+
+      - name: Generate admin token
+        run: |
+          TOKEN=$(docker exec svix-server svix-server jwt generate | tr -d '\r' | awk '{print $NF}')
+          echo "::add-mask::$TOKEN"
+          echo "SVIX_ADMIN_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Run integration tests
+        env:
+          SVIX_SERVER_URL: http://localhost:8071
+        run: npm run test:integration
