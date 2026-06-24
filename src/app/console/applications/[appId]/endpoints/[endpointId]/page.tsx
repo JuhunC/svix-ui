@@ -8,5 +8,11 @@ export default async function EndpointDetailPage({
   params: Promise<{ appId: string; endpointId: string }>;
 }) {
   const { appId, endpointId } = await params;
-  return <EndpointDetail appId={appId} endpointId={endpointId} />;
+  return (
+    <EndpointDetail
+      apiBase={`/api/admin/apps/${encodeURIComponent(appId)}/endpoints/${encodeURIComponent(endpointId)}`}
+      backHref={`/console/applications/${encodeURIComponent(appId)}`}
+      afterDeleteHref={`/console/applications/${encodeURIComponent(appId)}`}
+    />
+  );
 }

@@ -5,6 +5,7 @@ import { SvixApiError } from "@/lib/svix/errors";
 import { Alert, Badge, Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { DeleteApplicationButton } from "@/components/applications/delete-application-button";
+import { PortalLinkButton } from "@/components/applications/portal-link-button";
 import { EndpointsSection } from "@/components/endpoints/endpoints-section";
 import type { Application } from "@/lib/svix/types";
 
@@ -73,7 +74,12 @@ export default async function ApplicationDetailPage({
             </dl>
           </Card>
 
-          <EndpointsSection appId={app.id} />
+          <PortalLinkButton appId={app.id} />
+
+          <EndpointsSection
+            apiBase={`/api/admin/apps/${encodeURIComponent(app.id)}/endpoints`}
+            hrefBase={`/console/applications/${encodeURIComponent(app.id)}/endpoints`}
+          />
         </>
       ) : null}
     </div>

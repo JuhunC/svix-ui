@@ -15,8 +15,16 @@ import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
 import type { Endpoint } from "@/lib/svix/types";
 
-export function EndpointsSection({ appId }: { appId: string }) {
-  const base = `/api/admin/apps/${encodeURIComponent(appId)}/endpoints`;
+export function EndpointsSection({
+  apiBase,
+  hrefBase,
+  heading = "Endpoints",
+}: {
+  apiBase: string;
+  hrefBase: string;
+  heading?: string;
+}) {
+  const base = apiBase;
   const { items, done, loading, error, loadMore, reload } =
     usePaginatedList<Endpoint>(base);
   const [creating, setCreating] = useState(false);
@@ -24,7 +32,7 @@ export function EndpointsSection({ appId }: { appId: string }) {
   return (
     <section className="mt-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-zinc-900">Endpoints</h2>
+        <h2 className="text-base font-semibold text-zinc-900">{heading}</h2>
         <Button size="sm" onClick={() => setCreating((v) => !v)}>
           {creating ? "Cancel" : "Add endpoint"}
         </Button>
@@ -60,7 +68,7 @@ export function EndpointsSection({ appId }: { appId: string }) {
               <li key={ep.id} className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0">
                   <Link
-                    href={`/console/applications/${encodeURIComponent(appId)}/endpoints/${encodeURIComponent(ep.id)}`}
+                    href={`${hrefBase}/${encodeURIComponent(ep.id)}`}
                     className="block truncate font-mono text-sm text-zinc-900 hover:underline"
                   >
                     {ep.url}

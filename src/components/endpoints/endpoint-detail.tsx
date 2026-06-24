@@ -16,14 +16,16 @@ import type {
 } from "@/lib/svix/types";
 
 export function EndpointDetail({
-  appId,
-  endpointId,
+  apiBase,
+  backHref,
+  afterDeleteHref,
 }: {
-  appId: string;
-  endpointId: string;
+  apiBase: string;
+  backHref: string;
+  afterDeleteHref: string;
 }) {
   const router = useRouter();
-  const base = `/api/admin/apps/${encodeURIComponent(appId)}/endpoints/${encodeURIComponent(endpointId)}`;
+  const base = apiBase;
   const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export function EndpointDetail({
     setBusy(true);
     try {
       await apiSend("DELETE", base);
-      router.push(`/console/applications/${encodeURIComponent(appId)}`);
+      router.push(afterDeleteHref);
       router.refresh();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to delete");
@@ -76,11 +78,8 @@ export function EndpointDetail({
 
   return (
     <div>
-      <Link
-        href={`/console/applications/${encodeURIComponent(appId)}`}
-        className="text-sm text-zinc-500 hover:text-zinc-900"
-      >
-        ← Application
+      <Link href={backHref} className="text-sm text-zinc-500 hover:text-zinc-900">
+        ← Back
       </Link>
 
       <div className="mt-2 flex items-start justify-between gap-4">
@@ -130,6 +129,20 @@ function DeliveriesCard({ base }: { base: string }) {
   const [recovering, setRecovering] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  async function resend(attemptId: string, msgId: string) {
+    setResendingId(attemptId);
+    setError(null);
+    try {
+      await apiSend("POST", `${base}/messages/${encodeURIComponent(msgId)}/resend`);
+      attempts.reload();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to resend");
+    } finally {
+      setResendingId(null);
+    }
+  }
 
   async function recover(hours: number) {
     setRecovering(true);
@@ -179,7 +192,17 @@ function DeliveriesCard({ base }: { base: string }) {
                       {a.responseStatusCode || "—"}
                     </span>
                   </span>
-                  <span className="text-xs text-zinc-400">{formatDateTime(a.timestamp)}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-xs text-zinc-400">{formatDateTime(a.timestamp)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => resend(a.id, a.msgId)}
+                      disabled={resendingId === a.id}
+                    >
+                      {resendingId === a.id ? "…" : "Resend"}
+                    </Button>
+                  </span>
                 </li>
               );
             })}
