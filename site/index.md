@@ -14,7 +14,7 @@ webhooks server — shipped as a single container image that drops into your
 existing Svix `docker-compose` stack.
 {: .fs-6 .fw-300 }
 
-[Get started](getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Get started](getting-started.html){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/JuhunC/svix-ui){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
@@ -49,13 +49,13 @@ the portal only ever hold a short-lived, **app-scoped** token.
 
 | Guide | What it covers |
 |---|---|
-| [Getting started](getting-started) | Run the whole stack with Docker in a few minutes |
-| [Configuration](configuration) | Every environment variable, explained |
-| [Operator console](operator-console) | Applications, event types, endpoints, deliveries |
-| [Consumer App Portal](app-portal) | Magic links, capabilities, what customers can do |
-| [Verifying webhooks](verifying-webhooks) | Signatures, headers, and verification code |
-| [Deployment](deployment) | Production topology, TLS, scaling, hardening |
-| [Troubleshooting](troubleshooting) | Common errors and how to fix them |
+| [Getting started](getting-started.html) | Run the whole stack with Docker in a few minutes |
+| [Configuration](configuration.html) | Every environment variable, explained |
+| [Operator console](operator-console.html) | Applications, event types, endpoints, deliveries |
+| [Consumer App Portal](app-portal.html) | Magic links, capabilities, what customers can do |
+| [Verifying webhooks](verifying-webhooks.html) | Signatures, headers, and verification code |
+| [Deployment](deployment.html) | Production topology, TLS, scaling, hardening |
+| [Troubleshooting](troubleshooting.html) | Common errors and how to fix them |
 
 ---
 

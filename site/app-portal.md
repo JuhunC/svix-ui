@@ -81,4 +81,4 @@ over embedding a cross-origin dashboard.
 - Prefer sending links over a channel the customer already trusts (your
   authenticated dashboard, or a direct message), not a public page.
 - Set `SVIX_UI_PUBLIC_URL` so generated links use your real external origin —
-  see [Configuration](configuration#setting-the-public-url).
+  see [Configuration](configuration.html#setting-the-public-url).

@@ -19,7 +19,7 @@ offending fields. Check that all of `SVIX_SERVER_URL`, `SVIX_ADMIN_TOKEN`,
 `SVIX_UI_SESSION_SECRET`, `SVIX_UI_OPERATOR_USERNAME`, and
 `SVIX_UI_OPERATOR_PASSWORD` are set, that `SVIX_SERVER_URL` is a valid URL, and
 that `SVIX_UI_SESSION_SECRET` is at least 16 characters. See
-[Configuration](configuration).
+[Configuration](configuration.html).
 
 ## "Invalid username or password"
 
@@ -61,7 +61,7 @@ longer be verified.
 If links use `localhost` or an internal hostname, set `SVIX_UI_PUBLIC_URL` to
 your external origin (e.g. `https://hooks.example.com`) and make sure your proxy
 forwards `X-Forwarded-Proto` / `X-Forwarded-Host`. See
-[Deployment](deployment#put-tls-in-front).
+[Deployment](deployment.html#put-tls-in-front).
 
 ## Test messages send but never deliver
 

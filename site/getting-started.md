@@ -54,7 +54,7 @@ Open **<http://localhost:3000>** and sign in with:
 `change-me` and `SVIX_JWT_SECRET=change-me` are for local trials only. For
 anything reachable by others, set a strong operator password, a random
 `SVIX_UI_SESSION_SECRET` (`openssl rand -hex 32`), and a strong
-`SVIX_JWT_SECRET`. See [Deployment](deployment#production-hardening).
+`SVIX_JWT_SECRET`. See [Deployment](deployment.html#production-hardening).
 
 ### What the `jwt generate` step does
 
@@ -75,14 +75,14 @@ Once signed in:
 4. Hit **Send test message** from the application's *Deliveries* page and watch
    the attempt appear, with its response status.
 
-See the [Operator console guide](operator-console) for the full tour.
+See the [Operator console guide](operator-console.html) for the full tour.
 
 ## Hand a customer the App Portal
 
 On an application's page, click **Create portal link**. Copy the generated URL
 and send it to your customer. When they open it, they get a self-service page to
 manage *their* endpoints — without any access to your other tenants or your
-admin token. See [Consumer App Portal](app-portal).
+admin token. See [Consumer App Portal](app-portal.html).
 
 ## Pointing at an existing svix-server
 
@@ -100,4 +100,4 @@ docker run -d --name svix-ui -p 3000:3000 \
   ghcr.io/juhunc/svix-ui:latest
 ```
 
-Every variable is documented in [Configuration](configuration).
+Every variable is documented in [Configuration](configuration.html).

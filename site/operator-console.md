@@ -66,7 +66,7 @@ Open an application to manage its **endpoints** — the URLs Svix delivers to.
   - See **recent deliveries** and **recover** failed messages from the last
     1h / 24h.
 
-See [Verifying webhooks](verifying-webhooks) for what receivers do with the
+See [Verifying webhooks](verifying-webhooks.html) for what receivers do with the
 signing secret and headers.
 
 ## Deliveries
@@ -96,4 +96,4 @@ Two complementary tools recover from receiver outages:
 
 Each application page has a **Create portal link** action. It mints a
 self-service link your customer can open to manage their own endpoints. This is
-covered in detail in the [Consumer App Portal](app-portal) guide.
+covered in detail in the [Consumer App Portal](app-portal.html) guide.
