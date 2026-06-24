@@ -4,9 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alert, Badge, Button, Card, Input } from "@/components/ui";
+import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import { formatDateTime } from "@/lib/format";
-import type { Endpoint, EndpointHeaders, EndpointSecret } from "@/lib/svix/types";
+import { attemptStatus } from "@/lib/svix/status";
+import type {
+  Endpoint,
+  EndpointHeaders,
+  EndpointSecret,
+  MessageAttempt,
+} from "@/lib/svix/types";
 
 export function EndpointDetail({
   appId,
@@ -113,7 +120,81 @@ export function EndpointDetail({
       <SecretCard base={base} />
       <SubscriptionsCard base={base} endpoint={endpoint} onSaved={reload} />
       <HeadersCard base={base} />
+      <DeliveriesCard base={base} />
     </div>
+  );
+}
+
+function DeliveriesCard({ base }: { base: string }) {
+  const attempts = usePaginatedList<MessageAttempt>(`${base}/attempts`, 10);
+  const [recovering, setRecovering] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function recover(hours: number) {
+    setRecovering(true);
+    setNotice(null);
+    setError(null);
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    try {
+      await apiSend("POST", `${base}/recover`, { since });
+      setNotice(`Recovery of failed messages from the last ${hours}h was queued.`);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to start recovery");
+    } finally {
+      setRecovering(false);
+    }
+  }
+
+  return (
+    <Card className="mt-4 p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-zinc-900">Recent deliveries</h2>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => recover(1)} disabled={recovering}>
+            Recover 1h
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => recover(24)} disabled={recovering}>
+            Recover 24h
+          </Button>
+        </div>
+      </div>
+
+      {notice ? <div className="mt-3"><Alert tone="success">{notice}</Alert></div> : null}
+      {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
+      {attempts.error ? <div className="mt-3"><Alert>{attempts.error}</Alert></div> : null}
+
+      <div className="mt-3 overflow-hidden rounded-md border border-zinc-100">
+        {attempts.items.length === 0 && !attempts.loading ? (
+          <p className="p-4 text-sm text-zinc-500">No deliveries yet.</p>
+        ) : (
+          <ul className="divide-y divide-zinc-100">
+            {attempts.items.map((a) => {
+              const s = attemptStatus(a.status);
+              return (
+                <li key={a.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                  <span className="flex items-center gap-2">
+                    <Badge tone={s.tone}>{s.label}</Badge>
+                    <span className="font-mono text-xs text-zinc-500">
+                      {a.responseStatusCode || "—"}
+                    </span>
+                  </span>
+                  <span className="text-xs text-zinc-400">{formatDateTime(a.timestamp)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {!attempts.done && attempts.items.length > 0 ? (
+        <div className="mt-3 text-center">
+          <Button variant="ghost" size="sm" onClick={attempts.loadMore}>
+            Load more
+          </Button>
+        </div>
+      ) : null}
+    </Card>
   );
 }
 

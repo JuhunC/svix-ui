@@ -50,7 +50,15 @@ export default async function ApplicationDetailPage({
                 {app.uid ? <Badge>{app.uid}</Badge> : null}
               </div>
             </div>
-            <DeleteApplicationButton appId={app.id} />
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/console/applications/${encodeURIComponent(app.id)}/messages`}
+                className="inline-flex h-9 items-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              >
+                View deliveries
+              </Link>
+              <DeleteApplicationButton appId={app.id} />
+            </div>
           </div>
 
           <Card className="mt-6 p-5">
