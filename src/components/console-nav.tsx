@@ -8,6 +8,7 @@ import { cn } from "@/components/ui";
 const NAV_ITEMS: Array<{ href: string; label: string }> = [
   { href: "/console", label: "Overview" },
   { href: "/console/applications", label: "Applications" },
+  { href: "/console/event-types", label: "Event types" },
 ];
 
 export function ConsoleNav() {
