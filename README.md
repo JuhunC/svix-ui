@@ -1,7 +1,10 @@
 # svix-ui — an open-source web UI for self-hosted Svix Webhooks
 
-> **Status:** Planning / pre-implementation. This repository currently holds the
-> design and research that the build will be driven from. See [`docs/`](docs/).
+> **📖 User guides:** **<https://juhunc.github.io/svix-ui/>**
+> · **Image:** `ghcr.io/juhunc/svix-ui:latest` · **License:** MIT
+>
+> Operator console + consumer App Portal for the self-hosted Svix webhooks
+> server, shipped as a single container. See [Getting started](https://juhunc.github.io/svix-ui/getting-started.html).
 
 ## The one-paragraph pitch
 
