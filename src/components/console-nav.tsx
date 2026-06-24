@@ -7,6 +7,7 @@ import { cn } from "@/components/ui";
 /** Top-level console navigation. Extended as features land. */
 const NAV_ITEMS: Array<{ href: string; label: string }> = [
   { href: "/console", label: "Overview" },
+  { href: "/console/applications", label: "Applications" },
 ];
 
 export function ConsoleNav() {
