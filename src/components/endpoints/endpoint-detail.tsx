@@ -1,0 +1,366 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Alert, Badge, Button, Card, Input } from "@/components/ui";
+import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
+import { formatDateTime } from "@/lib/format";
+import type { Endpoint, EndpointHeaders, EndpointSecret } from "@/lib/svix/types";
+
+export function EndpointDetail({
+  appId,
+  endpointId,
+}: {
+  appId: string;
+  endpointId: string;
+}) {
+  const router = useRouter();
+  const base = `/api/admin/apps/${encodeURIComponent(appId)}/endpoints/${encodeURIComponent(endpointId)}`;
+  const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const reload = useCallback(async () => {
+    try {
+      setEndpoint(await apiGet<Endpoint>(base));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to load endpoint");
+    } finally {
+      setLoading(false);
+    }
+  }, [base]);
+
+  useEffect(() => {
+    // reload() only updates state after an awaited fetch (no synchronous setState).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
+
+  async function toggleDisabled() {
+    if (!endpoint) return;
+    setBusy(true);
+    try {
+      await apiSend("PATCH", base, { disabled: !endpoint.disabled });
+      await reload();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm("Delete this endpoint? Delivery to this URL will stop.")) return;
+    setBusy(true);
+    try {
+      await apiSend("DELETE", base);
+      router.push(`/console/applications/${encodeURIComponent(appId)}`);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to delete");
+      setBusy(false);
+    }
+  }
+
+  if (loading) return <p className="text-sm text-zinc-400">Loading…</p>;
+  if (error && !endpoint) return <Alert>{error}</Alert>;
+  if (!endpoint) return null;
+
+  return (
+    <div>
+      <Link
+        href={`/console/applications/${encodeURIComponent(appId)}`}
+        className="text-sm text-zinc-500 hover:text-zinc-900"
+      >
+        ← Application
+      </Link>
+
+      <div className="mt-2 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="truncate font-mono text-lg text-zinc-900">{endpoint.url}</h1>
+          <div className="mt-1 flex items-center gap-2">
+            {endpoint.disabled ? (
+              <Badge tone="danger">Disabled</Badge>
+            ) : (
+              <Badge tone="success">Active</Badge>
+            )}
+            <span className="font-mono text-xs text-zinc-400">{endpoint.id}</span>
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="secondary" size="sm" onClick={toggleDisabled} disabled={busy}>
+            {endpoint.disabled ? "Enable" : "Disable"}
+          </Button>
+          <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <Card className="mt-6 p-5">
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Detail label="Created" value={formatDateTime(endpoint.createdAt)} />
+          <Detail label="Updated" value={formatDateTime(endpoint.updatedAt)} />
+          <Detail label="Rate limit" value={endpoint.rateLimit ? `${endpoint.rateLimit}/s` : "—"} />
+          <Detail
+            label="Channels"
+            value={endpoint.channels?.length ? endpoint.channels.join(", ") : "—"}
+          />
+        </dl>
+      </Card>
+
+      <SecretCard base={base} />
+      <SubscriptionsCard base={base} endpoint={endpoint} onSaved={reload} />
+      <HeadersCard base={base} />
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wide text-zinc-400">{label}</dt>
+      <dd className="mt-0.5 truncate text-sm text-zinc-800">{value}</dd>
+    </div>
+  );
+}
+
+function SecretCard({ base }: { base: string }) {
+  const [secret, setSecret] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function reveal() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await apiGet<EndpointSecret>(`${base}/secret`);
+      setSecret(res.key);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to load secret");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rotate() {
+    if (!confirm("Rotate the signing secret? The old secret stays valid for 24h.")) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await apiSend("POST", `${base}/secret/rotate`);
+      const res = await apiGet<EndpointSecret>(`${base}/secret`);
+      setSecret(res.key);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to rotate secret");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt-4 p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-zinc-900">Signing secret</h2>
+        <div className="flex gap-2">
+          {secret === null ? (
+            <Button variant="secondary" size="sm" onClick={reveal} disabled={busy}>
+              Reveal
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="sm" onClick={rotate} disabled={busy}>
+            Rotate
+          </Button>
+        </div>
+      </div>
+      {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
+      <p className="mt-3 font-mono text-sm text-zinc-800">
+        {secret ?? "whsec_••••••••••••••••••••••••"}
+      </p>
+      <p className="mt-2 text-xs text-zinc-500">
+        Verify with HMAC-SHA256 over <code>id.timestamp.body</code>; reject
+        timestamps older than 5 minutes.
+      </p>
+    </Card>
+  );
+}
+
+function SubscriptionsCard({
+  base,
+  endpoint,
+  onSaved,
+}: {
+  base: string;
+  endpoint: Endpoint;
+  onSaved: () => Promise<void> | void;
+}) {
+  const initialSelected = (endpoint.filterTypes ?? []).length > 0;
+  const [mode, setMode] = useState<"all" | "selected">(
+    initialSelected ? "selected" : "all",
+  );
+  const [text, setText] = useState((endpoint.filterTypes ?? []).join(", "));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    const filterTypes =
+      mode === "all"
+        ? null
+        : text
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+    try {
+      await apiSend("PATCH", base, { filterTypes });
+      await onSaved();
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to save");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt-4 p-5">
+      <h2 className="text-base font-semibold text-zinc-900">Subscriptions</h2>
+      <p className="mt-1 text-sm text-zinc-500">
+        Choose which event types this endpoint receives.
+      </p>
+      <form onSubmit={save} className="mt-3">
+        <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <input
+            type="radio"
+            checked={mode === "all"}
+            onChange={() => setMode("all")}
+          />
+          All event types
+        </label>
+        <label className="mt-2 flex items-center gap-2 text-sm text-zinc-700">
+          <input
+            type="radio"
+            checked={mode === "selected"}
+            onChange={() => setMode("selected")}
+          />
+          Selected event types
+        </label>
+        {mode === "selected" ? (
+          <div className="mt-2">
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="invoice.paid, invoice.payment_failed"
+            />
+            <p className="mt-1 text-xs text-zinc-500">Comma-separated event type names.</p>
+          </div>
+        ) : null}
+        {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
+        <div className="mt-3 flex items-center gap-3">
+          <Button type="submit" size="sm" disabled={busy}>
+            {busy ? "Saving…" : "Save subscriptions"}
+          </Button>
+          {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+function HeadersCard({ base }: { base: string }) {
+  const [rows, setRows] = useState<Array<{ key: string; value: string }>>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    apiGet<EndpointHeaders>(`${base}/headers`)
+      .then((res) => {
+        if (!active) return;
+        const entries = Object.entries(res.headers ?? {});
+        setRows(entries.map(([key, value]) => ({ key, value })));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [base]);
+
+  function update(i: number, patch: Partial<{ key: string; value: string }>) {
+    setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+  }
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    const headers: Record<string, string> = {};
+    for (const { key, value } of rows) {
+      if (key.trim()) headers[key.trim()] = value;
+    }
+    try {
+      await apiSend("PATCH", `${base}/headers`, { headers });
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to save headers");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt-4 p-5">
+      <h2 className="text-base font-semibold text-zinc-900">Custom headers</h2>
+      <p className="mt-1 text-sm text-zinc-500">
+        Extra HTTP headers sent with every delivery to this endpoint.
+      </p>
+      <div className="mt-3 space-y-2">
+        {rows.map((row, i) => (
+          <div key={i} className="flex gap-2">
+            <Input
+              value={row.key}
+              onChange={(e) => update(i, { key: e.target.value })}
+              placeholder="X-Custom-Header"
+              className="font-mono"
+            />
+            <Input
+              value={row.value}
+              onChange={(e) => update(i, { value: e.target.value })}
+              placeholder="value"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRows((r) => r.filter((_, idx) => idx !== i))}
+              aria-label="Remove header"
+            >
+              ✕
+            </Button>
+          </div>
+        ))}
+      </div>
+      {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
+      <div className="mt-3 flex items-center gap-3">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setRows((r) => [...r, { key: "", value: "" }])}
+        >
+          Add header
+        </Button>
+        <Button size="sm" onClick={save} disabled={busy}>
+          {busy ? "Saving…" : "Save headers"}
+        </Button>
+        {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+      </div>
+    </Card>
+  );
+}

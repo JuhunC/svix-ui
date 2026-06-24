@@ -67,7 +67,16 @@ export interface EndpointIn {
   metadata?: Record<string, string>;
 }
 
-export type EndpointPatch = Partial<EndpointIn>;
+export interface EndpointPatch {
+  url?: string;
+  description?: string;
+  disabled?: boolean;
+  // null clears the filter so the endpoint receives every event type.
+  filterTypes?: string[] | null;
+  channels?: string[] | null;
+  rateLimit?: number | null;
+  metadata?: Record<string, string>;
+}
 
 export interface EndpointSecret {
   key: string;

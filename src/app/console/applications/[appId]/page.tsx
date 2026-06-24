@@ -5,6 +5,7 @@ import { SvixApiError } from "@/lib/svix/errors";
 import { Alert, Badge, Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { DeleteApplicationButton } from "@/components/applications/delete-application-button";
+import { EndpointsSection } from "@/components/endpoints/endpoints-section";
 import type { Application } from "@/lib/svix/types";
 
 export const dynamic = "force-dynamic";
@@ -64,9 +65,7 @@ export default async function ApplicationDetailPage({
             </dl>
           </Card>
 
-          <p className="mt-6 text-sm text-zinc-400">
-            Endpoints and deliveries for this application appear here.
-          </p>
+          <EndpointsSection appId={app.id} />
         </>
       ) : null}
     </div>
