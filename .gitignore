@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Jekyll docs site build artifacts
+site/_site/
+site/.jekyll-cache/
+site/.sass-cache/

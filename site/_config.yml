@@ -1,0 +1,49 @@
+title: svix-ui
+description: >-
+  User guides for svix-ui — the open-source web UI for self-hosted Svix webhooks.
+theme: just-the-docs
+
+url: https://juhunc.github.io
+baseurl: "/svix-ui"
+
+repository: JuhunC/svix-ui
+
+# Theme behaviour
+search_enabled: true
+color_scheme: light
+heading_anchors: true
+
+aux_links:
+  "GitHub":
+    - "https://github.com/JuhunC/svix-ui"
+aux_links_new_tab: true
+
+nav_external_links:
+  - title: GitHub repository
+    url: https://github.com/JuhunC/svix-ui
+
+callouts:
+  note:
+    title: Note
+    color: blue
+  warning:
+    title: Warning
+    color: red
+  tip:
+    title: Tip
+    color: green
+
+footer_content: >-
+  svix-ui is an independent, MIT-licensed community project.
+  "Svix" is a trademark of Svix, Inc.; this project is not affiliated with or
+  endorsed by Svix.
+
+# Jekyll
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
