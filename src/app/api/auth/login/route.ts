@@ -3,7 +3,7 @@ import { z } from "zod";
 import { loadServerConfig } from "@/lib/config";
 import { verifyOperatorCredentials } from "@/lib/auth/operator";
 import { createOperatorSession } from "@/lib/auth/session";
-import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/server";
+import { SESSION_COOKIE, isRequestSecure, sessionCookieOptions } from "@/lib/auth/server";
 import { SvixConfigError } from "@/lib/svix/errors";
 
 const Body = z.object({
@@ -39,6 +39,6 @@ export async function POST(req: NextRequest) {
 
   const token = createOperatorSession(parsed.data.username, cfg.sessionSecret);
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+  res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(isRequestSecure(req)));
   return res;
 }

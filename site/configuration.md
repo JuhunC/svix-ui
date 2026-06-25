@@ -26,6 +26,7 @@ at sign-in rather than a silent failure.
 | `SVIX_UI_OPERATOR_USERNAME` | ✅ | — | Username for the operator console login. |
 | `SVIX_UI_OPERATOR_PASSWORD` | ✅ | — | Password for the operator console login (constant-time compared). |
 | `SVIX_UI_PUBLIC_URL` | ⛔️ | request origin | Public origin of svix-ui, used to build consumer App Portal magic links. Set this when behind a reverse proxy. |
+| `SVIX_UI_COOKIE_SECURE` | ⛔️ | auto | Force the `Secure` flag on cookies. Default mirrors the connection (Secure over HTTPS / `X-Forwarded-Proto: https`, not over plain HTTP). Set `true` to always require HTTPS, `false` to never set Secure. |
 
 {: .note }
 In the sample `.env.example`, `SVIX_UI_OPERATOR_USERNAME` defaults to `admin`

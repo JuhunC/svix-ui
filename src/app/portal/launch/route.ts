@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { loadServerConfig } from "@/lib/config";
 import { sealPortalSession } from "@/lib/auth/portal";
+import { isRequestSecure } from "@/lib/auth/server";
 import { PORTAL_COOKIE, portalCookieOptions } from "@/lib/api/portal";
 
 const DEFAULT_TTL = 60 * 60 * 24 * 7;
@@ -31,6 +32,6 @@ export async function GET(req: NextRequest) {
     secret,
   );
   const res = NextResponse.redirect(new URL("/portal", req.nextUrl.origin));
-  res.cookies.set(PORTAL_COOKIE, sealed, portalCookieOptions(ttl));
+  res.cookies.set(PORTAL_COOKIE, sealed, portalCookieOptions(ttl, isRequestSecure(req)));
   return res;
 }

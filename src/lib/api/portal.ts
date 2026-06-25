@@ -53,11 +53,11 @@ export function withPortal<P extends Record<string, string> = Record<string, nev
   };
 }
 
-export function portalCookieOptions(maxAgeSeconds: number) {
+export function portalCookieOptions(maxAgeSeconds: number, secure: boolean) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     path: "/",
     maxAge: maxAgeSeconds,
   };

@@ -1,14 +1,32 @@
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 import { loadServerConfig } from "@/lib/config";
 import { verifySession, type SessionPayload } from "./session";
 
 export const SESSION_COOKIE = "svix_ui_session";
 
-export function sessionCookieOptions() {
+/**
+ * Whether to mark cookies `Secure`. A `Secure` cookie is dropped by browsers
+ * over plain HTTP (except on localhost), which would silently break login on an
+ * HTTP deployment. So we mirror the actual connection: HTTPS (directly or via a
+ * proxy's `X-Forwarded-Proto`) → secure; plain HTTP → not secure. Override with
+ * `SVIX_UI_COOKIE_SECURE=true|false`.
+ */
+export function isRequestSecure(req: NextRequest): boolean {
+  const override = process.env.SVIX_UI_COOKIE_SECURE?.trim().toLowerCase();
+  if (override === "true" || override === "1") return true;
+  if (override === "false" || override === "0") return false;
+
+  const forwarded = req.headers.get("x-forwarded-proto");
+  if (forwarded) return forwarded.split(",")[0].trim() === "https";
+  return req.nextUrl.protocol === "https:";
+}
+
+export function sessionCookieOptions(secure: boolean) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     path: "/",
     maxAge: 60 * 60 * 8,
   };

@@ -21,6 +21,30 @@ offending fields. Check that all of `SVIX_SERVER_URL`, `SVIX_ADMIN_TOKEN`,
 that `SVIX_UI_SESSION_SECRET` is at least 16 characters. See
 [Configuration](configuration.html).
 
+## Login succeeds but I stay on the login page
+
+You enter the right credentials, see **no error**, but the login page reloads
+instead of opening the console. This is a cookie problem, not a credentials
+problem: the browser is discarding the session cookie.
+
+The usual cause is serving svix-ui over **plain HTTP from a non-`localhost`
+address** (e.g. `http://192.168.x.x:3000`). A `Secure` cookie is dropped by
+browsers over insecure HTTP, so the session never sticks.
+
+svix-ui sets the cookie's `Secure` flag to match the connection automatically —
+not Secure over HTTP, Secure over HTTPS (including behind a proxy that sends
+`X-Forwarded-Proto: https`). Make sure you are on a build that includes this
+behaviour, then:
+
+- **Easiest:** put svix-ui behind HTTPS (see
+  [Deployment → TLS](deployment.html#put-tls-in-front)) and forward
+  `X-Forwarded-Proto`.
+- Or access it via `http://localhost:3000` from the same machine — browsers
+  treat `localhost` as secure.
+- To force the behaviour either way, set
+  [`SVIX_UI_COOKIE_SECURE`](configuration.html#environment-variables) to `true`
+  (require HTTPS) or `false` (never set Secure), then recreate the container.
+
 ## "Invalid username or password"
 
 The credentials don't match `SVIX_UI_OPERATOR_USERNAME` /
