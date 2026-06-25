@@ -29,18 +29,29 @@ export const POST = withAdmin<{ appId: string }>(async ({ req, client, params })
   const expiry = opts.expiry ?? DEFAULT_EXPIRY;
 
   // The token is app-scoped and browser-safe. We ignore the upstream `url`
-  // (a placeholder in OSS) and build a link to our own portal launcher.
+  // (a placeholder in OSS) and let the launch link be assembled on the
+  // operator's origin (the client builds it from window.location), which is the
+  // only reliable host. We only return a server-built link when the operator
+  // has explicitly configured a public URL (e.g. behind a proxy).
   const access = await client.appPortalAccess(params.appId, {
     capabilities: opts.capabilities,
     readOnly: opts.readOnly,
     expiry,
   });
 
-  const origin = loadServerConfig().publicUrl ?? req.nextUrl.origin;
-  const link = new URL("/portal/launch", origin);
-  link.searchParams.set("token", access.token);
-  link.searchParams.set("app", params.appId);
-  link.searchParams.set("exp", String(expiry));
+  const publicUrl = loadServerConfig().publicUrl;
+  const query = new URLSearchParams({
+    token: access.token,
+    app: params.appId,
+    exp: String(expiry),
+  }).toString();
+  const link = publicUrl ? `${publicUrl}/portal/launch?${query}` : null;
 
-  return NextResponse.json({ link: link.toString(), expiresInSeconds: expiry });
+  return NextResponse.json({
+    token: access.token,
+    app: params.appId,
+    exp: expiry,
+    link,
+    expiresInSeconds: expiry,
+  });
 });

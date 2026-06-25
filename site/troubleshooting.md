@@ -73,20 +73,29 @@ running with now. Regenerate it against the *current* server:
 docker compose exec -T svix-server svix-server jwt generate | awk '{print $NF}'
 ```
 
-## The App Portal link opens a blank page / shows nothing
+## The App Portal link is blank or redirects to 0.0.0.0:3000
 
-The portal mechanism is fine (it works against the OSS svix-server) — the link
-is pointing at the wrong host. The most common cause is `SVIX_UI_PUBLIC_URL`
-being set to `http://localhost:3000`: the generated link then starts with
-`http://localhost:3000/portal/launch?...`, which loads nothing when opened from
-any machine other than the server itself.
+If opening the link sends you to `http://0.0.0.0:3000/portal` (or a `localhost`
+host you can't reach), upgrade to the latest image. Older builds asked the
+Next.js standalone server for its own URL, which reports its internal bind
+address (`0.0.0.0:3000`) rather than the address you used.
 
-Check the link you generated — does it start with `localhost`? If so:
+Current builds avoid this entirely: the shareable link is assembled from the
+operator's browser origin, and the launch step uses a **relative** redirect, so
+the customer stays on whatever host they actually opened — no `SVIX_UI_PUBLIC_URL`
+required.
 
-- **Leave `SVIX_UI_PUBLIC_URL` blank** to use the operator's request origin
-  automatically, **or** set it to your real external URL (e.g.
-  `https://hooks.example.com`). Then recreate the container and generate a new
-  link.
+```bash
+docker compose pull svix-ui
+docker compose up -d --force-recreate svix-ui
+```
+
+Then **generate a new link** (older links may still embed the wrong host).
+
+{: .note }
+Set `SVIX_UI_PUBLIC_URL` only when the URL your **customers** use differs from
+the one the operator uses — e.g. behind a reverse proxy on a public domain. When
+set, links are built from it instead of the browser origin.
 
 Two related checks if the page loads but is empty:
 

@@ -15,12 +15,21 @@ export function PortalLinkButton({ appId }: { appId: string }) {
     setError(null);
     setCopied(false);
     try {
-      const res = await apiSend<{ link: string }>(
-        "POST",
-        `/api/admin/apps/${encodeURIComponent(appId)}/portal-link`,
-        {},
-      );
-      setLink(res.link);
+      const res = await apiSend<{
+        token: string;
+        app: string;
+        exp: number;
+        link: string | null;
+      }>("POST", `/api/admin/apps/${encodeURIComponent(appId)}/portal-link`, {});
+      // Prefer a server-built link (set only when SVIX_UI_PUBLIC_URL is
+      // configured); otherwise build it from this browser's origin, which is
+      // the host the operator — and the customer — actually use.
+      const query = new URLSearchParams({
+        token: res.token,
+        app: res.app,
+        exp: String(res.exp),
+      }).toString();
+      setLink(res.link ?? `${window.location.origin}/portal/launch?${query}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to create link");
     } finally {

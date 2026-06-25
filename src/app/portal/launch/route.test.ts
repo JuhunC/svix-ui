@@ -12,15 +12,17 @@ import { openPortalSession } from "@/lib/auth/portal";
 afterEach(() => clearAdminEnv());
 
 describe("GET /portal/launch", () => {
-  it("seals the token into a cookie and redirects to /portal", async () => {
+  it("seals the token into a cookie and redirects relatively to /portal", async () => {
     applyAdminEnv();
     const res = await GET(
       new NextRequest(
-        "http://localhost/portal/launch?token=sk_app&app=app_9&exp=3600",
+        "http://0.0.0.0:3000/portal/launch?token=sk_app&app=app_9&exp=3600",
       ),
     );
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toContain("/portal");
+    // Relative location → browser resolves it against the address-bar origin,
+    // never the internal bind host.
+    expect(res.headers.get("location")).toBe("/portal");
 
     const cookie = res.cookies.get("svix_ui_portal");
     expect(cookie?.value).toBeTruthy();
@@ -33,6 +35,6 @@ describe("GET /portal/launch", () => {
     applyAdminEnv();
     const res = await GET(new NextRequest("http://localhost/portal/launch?app=app_9"));
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toContain("/portal/expired");
+    expect(res.headers.get("location")).toBe("/portal/expired");
   });
 });
