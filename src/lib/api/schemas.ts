@@ -26,3 +26,10 @@ export const HeadersBody = z.object({
 });
 
 export const RecoverBody = z.object({ since: z.string().min(1) });
+
+export const SendExample = z.object({ eventType: z.string().min(1) });
+
+export const TransformationBody = z.object({
+  enabled: z.boolean().optional(),
+  code: z.string().nullable().optional(),
+});

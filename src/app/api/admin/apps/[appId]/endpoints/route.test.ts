@@ -22,6 +22,8 @@ import { GET, POST } from "./route";
 import { PATCH, DELETE } from "./[endpointId]/route";
 import { GET as GET_SECRET } from "./[endpointId]/secret/route";
 import { POST as ROTATE } from "./[endpointId]/secret/rotate/route";
+import { POST as SEND_EXAMPLE } from "./[endpointId]/send-example/route";
+import { PATCH as SET_TRANSFORM } from "./[endpointId]/transformation/route";
 
 const BASE = ADMIN_ENV.SVIX_SERVER_URL;
 const params = Promise.resolve({ appId: "app_1", endpointId: "ep_1" });
@@ -155,5 +157,57 @@ describe("endpoint item", () => {
     );
     const res = await DELETE(req("/x", { method: "DELETE" }), { params });
     expect(res.status).toBe(204);
+  });
+});
+
+describe("testing & transformation", () => {
+  it("sends an example event", async () => {
+    applyAdminEnv();
+    auth.token = validOperatorToken();
+    let body: { eventType?: string } | undefined;
+    svixServer.use(
+      http.post(
+        `${BASE}/api/v1/app/app_1/endpoint/ep_1/send-example`,
+        async ({ request }) => {
+          body = (await request.json()) as typeof body;
+          return HttpResponse.json({ id: "atmpt_1" }, { status: 202 });
+        },
+      ),
+    );
+    const res = await SEND_EXAMPLE(
+      req("/x", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ eventType: "invoice.paid" }),
+      }),
+      { params },
+    );
+    expect(res.status).toBe(202);
+    expect(body?.eventType).toBe("invoice.paid");
+  });
+
+  it("saves a transformation", async () => {
+    applyAdminEnv();
+    auth.token = validOperatorToken();
+    let body: { enabled?: boolean; code?: string | null } | undefined;
+    svixServer.use(
+      http.patch(
+        `${BASE}/api/v1/app/app_1/endpoint/ep_1/transformation`,
+        async ({ request }) => {
+          body = (await request.json()) as typeof body;
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const res = await SET_TRANSFORM(
+      req("/x", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: true, code: "function handler(w){return w}" }),
+      }),
+      { params },
+    );
+    expect(res.status).toBe(204);
+    expect(body?.enabled).toBe(true);
   });
 });
