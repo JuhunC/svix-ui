@@ -11,8 +11,8 @@ export default async function PortalEndpointPage({
   return (
     <EndpointDetail
       apiBase={`/api/portal/endpoints/${encodeURIComponent(endpointId)}`}
-      backHref="/portal"
-      afterDeleteHref="/portal"
+      backHref="/portal/endpoints"
+      afterDeleteHref="/portal/endpoints"
     />
   );
 }
