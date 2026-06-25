@@ -10,7 +10,9 @@ import {
   EmptyState,
   Field,
   Input,
+  PageHeader,
 } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
 import { formatDateTime } from "@/lib/format";
@@ -23,17 +25,21 @@ export function ApplicationsView() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-zinc-900">Applications</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Each application is a tenant — a consumer of your webhooks.
-          </p>
-        </div>
-        <Button onClick={() => setCreating((v) => !v)}>
-          {creating ? "Cancel" : "New application"}
-        </Button>
-      </div>
+      <PageHeader
+        title="Applications"
+        description="Each application is a tenant — a consumer of your webhooks."
+        actions={
+          <Button onClick={() => setCreating((v) => !v)}>
+            {creating ? (
+              "Cancel"
+            ) : (
+              <>
+                <Icon name="plus" size={16} /> New application
+              </>
+            )}
+          </Button>
+        }
+      />
 
       {creating ? (
         <CreateApplicationForm
@@ -54,6 +60,7 @@ export function ApplicationsView() {
         {items.length === 0 && !loading && !error ? (
           <div className="p-6">
             <EmptyState
+              icon={<Icon name="apps" />}
               title="No applications yet"
               description="Create your first application to start sending webhooks to a tenant."
             />

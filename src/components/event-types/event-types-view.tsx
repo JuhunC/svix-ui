@@ -10,8 +10,10 @@ import {
   EmptyState,
   Field,
   Input,
+  PageHeader,
   Textarea,
 } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
 import type { EventType } from "@/lib/svix/types";
@@ -28,27 +30,31 @@ export function EventTypesView() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-zinc-900">Event types</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            The catalog of events your applications can emit.
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-600">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-            />
-            Show archived
-          </label>
-          <Button onClick={() => setCreating((v) => !v)}>
-            {creating ? "Cancel" : "New event type"}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Event types"
+        description="The catalog of events your applications can emit."
+        actions={
+          <>
+            <label className="flex items-center gap-2 text-sm text-zinc-600">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+              />
+              Show archived
+            </label>
+            <Button onClick={() => setCreating((v) => !v)}>
+              {creating ? (
+                "Cancel"
+              ) : (
+                <>
+                  <Icon name="plus" size={16} /> New event type
+                </>
+              )}
+            </Button>
+          </>
+        }
+      />
 
       {creating ? (
         <EventTypeForm
@@ -65,6 +71,7 @@ export function EventTypesView() {
         {items.length === 0 && !loading && !error ? (
           <div className="p-6">
             <EmptyState
+              icon={<Icon name="tag" />}
               title="No event types"
               description="Define the events your applications emit so consumers can subscribe."
             />

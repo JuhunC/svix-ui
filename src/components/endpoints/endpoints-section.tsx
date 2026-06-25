@@ -11,6 +11,7 @@ import {
   Field,
   Input,
 } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
 import type { Endpoint } from "@/lib/svix/types";
@@ -32,9 +33,15 @@ export function EndpointsSection({
   return (
     <section className="mt-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-zinc-900">{heading}</h2>
+        <h2 className="text-lg font-semibold text-zinc-900">{heading}</h2>
         <Button size="sm" onClick={() => setCreating((v) => !v)}>
-          {creating ? "Cancel" : "Add endpoint"}
+          {creating ? (
+            "Cancel"
+          ) : (
+            <>
+              <Icon name="plus" size={15} /> Add endpoint
+            </>
+          )}
         </Button>
       </div>
 
@@ -58,6 +65,7 @@ export function EndpointsSection({
         {items.length === 0 && !loading && !error ? (
           <div className="p-6">
             <EmptyState
+              icon={<Icon name="endpoints" />}
               title="No endpoints"
               description="Add an endpoint URL to start delivering webhooks to this tenant."
             />
