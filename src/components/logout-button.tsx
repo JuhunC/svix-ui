@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui";
+import { Icon } from "@/components/icons";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export function LogoutButton() {
 
   return (
     <Button variant="ghost" size="sm" onClick={logout} disabled={loading}>
+      <Icon name="logout" size={16} />
       Sign out
     </Button>
   );

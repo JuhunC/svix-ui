@@ -17,13 +17,13 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400";
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1";
   const sizes = { sm: "h-8 px-3 text-sm", md: "h-9 px-4 text-sm" };
   const variants = {
-    primary: "bg-zinc-900 text-white hover:bg-zinc-700",
+    primary: "bg-indigo-600 text-white shadow-sm hover:bg-indigo-500",
     secondary: "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50",
-    danger: "bg-red-600 text-white hover:bg-red-500",
-    ghost: "text-zinc-700 hover:bg-zinc-100",
+    danger: "bg-red-600 text-white shadow-sm hover:bg-red-500",
+    ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
   };
   return (
     <button
@@ -161,21 +161,104 @@ export function Alert({
 }
 
 export function EmptyState({
+  icon,
   title,
   description,
   action,
 }: {
+  icon?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60 px-6 py-14 text-center">
+      {icon ? (
+        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-zinc-400 shadow-sm ring-1 ring-zinc-200">
+          {icon}
+        </div>
+      ) : null}
       <p className="text-sm font-medium text-zinc-900">{title}</p>
       {description ? (
         <p className="mt-1 max-w-sm text-sm text-zinc-500">{description}</p>
       ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
+  );
+}
+
+export function PageHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
+          {title}
+        </h1>
+        {description ? (
+          <p className="mt-1 text-sm text-zinc-500">{description}</p>
+        ) : null}
+      </div>
+      {actions ? (
+        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+      ) : null}
+    </div>
+  );
+}
+
+export interface TabItem {
+  key: string;
+  label: React.ReactNode;
+}
+
+export function Tabs({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: TabItem[];
+  active: string;
+  onChange: (key: string) => void;
+}) {
+  return (
+    <div className="border-b border-zinc-200">
+      <nav className="-mb-px flex gap-6 overflow-x-auto">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => onChange(t.key)}
+            className={cn(
+              "whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors",
+              active === t.key
+                ? "border-indigo-600 text-zinc-900"
+                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+export function Spinner({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-indigo-600",
+        className,
+      )}
+      role="status"
+      aria-label="Loading"
+    />
   );
 }

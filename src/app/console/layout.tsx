@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getOperatorSession } from "@/lib/auth/server";
 import { LogoutButton } from "@/components/logout-button";
-import { ConsoleNav } from "@/components/console-nav";
+import { Brand, DashboardShell, type NavItem } from "@/components/dashboard-shell";
 
 // Auth is evaluated per request; never prerender the console.
 export const dynamic = "force-dynamic";
+
+const NAV: NavItem[] = [
+  { href: "/console", label: "Overview", icon: "dashboard", exact: true },
+  { href: "/console/applications", label: "Applications", icon: "apps" },
+  { href: "/console/event-types", label: "Event types", icon: "tag" },
+];
 
 export default async function ConsoleLayout({
   children,
@@ -16,22 +21,19 @@ export default async function ConsoleLayout({
   if (!session) redirect("/login");
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-6">
-            <Link href="/console" className="text-sm font-semibold text-zinc-900">
-              svix-ui
-            </Link>
-            <ConsoleNav />
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-zinc-500">{session.sub}</span>
-            <LogoutButton />
-          </div>
+    <DashboardShell
+      brand={<Brand subtitle="Operator console" />}
+      nav={NAV}
+      footer={
+        <div className="flex items-center justify-between gap-2">
+          <span className="min-w-0 truncate text-xs text-zinc-500">
+            {session.sub}
+          </span>
+          <LogoutButton />
         </div>
-      </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-    </div>
+      }
+    >
+      {children}
+    </DashboardShell>
   );
 }
