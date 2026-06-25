@@ -44,8 +44,13 @@ event types they care about.
   optional **JSON Schema** describing the payload (stored as schema version 1).
 - **Edit** an event type to update its description or schema, or mark it
   **Deprecated** or **Archived**.
-- Archived types are hidden from the default catalog but remain valid for
-  already-sent messages.
+- **Archive vs delete.** Svix soft-deletes event types: ticking **Archived**
+  (or the underlying API delete) hides a type from the catalog but keeps the
+  record so already-sent messages still resolve it. The list hides archived
+  types by default — tick **Show archived** to see them, and untick *Archived*
+  + save to restore one.
+- **Delete permanently** (on the event type's page) hard-deletes the record via
+  Svix's `expunge` — it cannot be undone.
 
 {: .tip }
 Defining schemas is optional but recommended — they document the payload shape

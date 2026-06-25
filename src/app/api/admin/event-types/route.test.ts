@@ -111,15 +111,37 @@ describe("event types", () => {
     expect((await res.json()).description).toBe("updated");
   });
 
-  it("deletes an event type", async () => {
+  it("archives an event type by default (no expunge)", async () => {
     applyAdminEnv();
     auth.token = validOperatorToken();
+    let expungeParam: string | null = "unset";
     svixServer.use(
-      http.delete(`${BASE}/api/v1/event-type/invoice.paid`, () => new HttpResponse(null, { status: 204 })),
+      http.delete(`${BASE}/api/v1/event-type/invoice.paid`, ({ request }) => {
+        expungeParam = new URL(request.url).searchParams.get("expunge");
+        return new HttpResponse(null, { status: 204 });
+      }),
     );
     const res = await DELETE(req("/x", { method: "DELETE" }), {
       params: Promise.resolve({ name: "invoice.paid" }),
     });
     expect(res.status).toBe(204);
+    expect(expungeParam).toBeNull();
+  });
+
+  it("permanently deletes when expunge=true", async () => {
+    applyAdminEnv();
+    auth.token = validOperatorToken();
+    let expungeParam: string | null = null;
+    svixServer.use(
+      http.delete(`${BASE}/api/v1/event-type/invoice.paid`, ({ request }) => {
+        expungeParam = new URL(request.url).searchParams.get("expunge");
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const res = await DELETE(req("/x?expunge=true", { method: "DELETE" }), {
+      params: Promise.resolve({ name: "invoice.paid" }),
+    });
+    expect(res.status).toBe(204);
+    expect(expungeParam).toBe("true");
   });
 });

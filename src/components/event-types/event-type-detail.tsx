@@ -70,10 +70,16 @@ export function EventTypeDetail({ name }: { name: string }) {
   }
 
   async function remove() {
-    if (!confirm(`Delete event type "${name}"?`)) return;
+    if (
+      !confirm(
+        `Permanently delete event type "${name}"? This removes it for good and cannot be undone. To hide it without deleting, tick "Archived" and save instead.`,
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     try {
-      await apiSend("DELETE", path);
+      await apiSend("DELETE", `${path}?expunge=true`);
       router.push("/console/event-types");
       router.refresh();
     } catch (e) {
@@ -93,7 +99,7 @@ export function EventTypeDetail({ name }: { name: string }) {
       <div className="mt-2 flex items-start justify-between">
         <h1 className="font-mono text-lg text-zinc-900">{name}</h1>
         <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
-          Delete
+          Delete permanently
         </Button>
       </div>
 

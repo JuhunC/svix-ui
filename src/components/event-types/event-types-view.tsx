@@ -17,8 +17,13 @@ import { ApiError, apiSend } from "@/lib/api/fetcher";
 import type { EventType } from "@/lib/svix/types";
 
 export function EventTypesView() {
+  const [showArchived, setShowArchived] = useState(false);
   const { items, done, loading, error, loadMore, reload } =
-    usePaginatedList<EventType>("/api/admin/event-types?includeArchived=true");
+    usePaginatedList<EventType>(
+      showArchived
+        ? "/api/admin/event-types?includeArchived=true"
+        : "/api/admin/event-types",
+    );
   const [creating, setCreating] = useState(false);
 
   return (
@@ -30,9 +35,19 @@ export function EventTypesView() {
             The catalog of events your applications can emit.
           </p>
         </div>
-        <Button onClick={() => setCreating((v) => !v)}>
-          {creating ? "Cancel" : "New event type"}
-        </Button>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-zinc-600">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            Show archived
+          </label>
+          <Button onClick={() => setCreating((v) => !v)}>
+            {creating ? "Cancel" : "New event type"}
+          </Button>
+        </div>
       </div>
 
       {creating ? (

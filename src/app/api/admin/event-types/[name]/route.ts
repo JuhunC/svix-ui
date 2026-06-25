@@ -30,7 +30,8 @@ export const PUT = withAdmin<Params>(async ({ req, client, params }) => {
   return NextResponse.json(eventType);
 });
 
-export const DELETE = withAdmin<Params>(async ({ client, params }) => {
-  await client.deleteEventType(params.name);
+export const DELETE = withAdmin<Params>(async ({ req, client, params }) => {
+  const expunge = req.nextUrl.searchParams.get("expunge") === "true";
+  await client.deleteEventType(params.name, expunge);
   return new NextResponse(null, { status: 204 });
 });

@@ -337,8 +337,14 @@ export class SvixClient {
     });
   }
 
-  deleteEventType(name: string): Promise<void> {
-    return this.request("DELETE", `${API}/event-type/${enc(name)}`);
+  /**
+   * Deletes an event type. By default Svix soft-deletes (archives) it; pass
+   * `expunge` to permanently remove the record.
+   */
+  deleteEventType(name: string, expunge = false): Promise<void> {
+    return this.request("DELETE", `${API}/event-type/${enc(name)}`, {
+      query: { expunge: expunge ? true : undefined },
+    });
   }
 
   // --- Messages ----------------------------------------------------------
