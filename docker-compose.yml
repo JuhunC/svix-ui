@@ -21,7 +21,11 @@ services:
       SVIX_UI_SESSION_SECRET: ${SVIX_UI_SESSION_SECRET:-please-change-this-session-secret}
       SVIX_UI_OPERATOR_USERNAME: ${SVIX_UI_OPERATOR_USERNAME:-admin}
       SVIX_UI_OPERATOR_PASSWORD: ${SVIX_UI_OPERATOR_PASSWORD:-change-me}
-      SVIX_UI_PUBLIC_URL: ${SVIX_UI_PUBLIC_URL:-http://localhost:3000}
+      # Public origin used to build App Portal magic links. Leave blank to use
+      # the operator's request origin automatically; set it explicitly (to your
+      # external URL) when behind a reverse proxy. Do NOT leave it as localhost
+      # if you reach svix-ui from another machine — portal links would 404.
+      SVIX_UI_PUBLIC_URL: ${SVIX_UI_PUBLIC_URL:-}
     ports:
       - "3000:3000"
     restart: unless-stopped

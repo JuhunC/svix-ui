@@ -44,6 +44,22 @@ describe("loadServerConfig", () => {
       loadServerConfig({ ...validEnv, SVIX_SERVER_URL: "not-a-url" } as NodeJS.ProcessEnv),
     ).toThrow(SvixConfigError);
   });
+
+  it("treats a blank public url as unset (falls back to request origin)", () => {
+    const cfg = loadServerConfig({
+      ...validEnv,
+      SVIX_UI_PUBLIC_URL: "   ",
+    } as NodeJS.ProcessEnv);
+    expect(cfg.publicUrl).toBeUndefined();
+  });
+
+  it("keeps a provided public url", () => {
+    const cfg = loadServerConfig({
+      ...validEnv,
+      SVIX_UI_PUBLIC_URL: "https://hooks.example.com",
+    } as NodeJS.ProcessEnv);
+    expect(cfg.publicUrl).toBe("https://hooks.example.com");
+  });
 });
 
 describe("getAdminClient", () => {

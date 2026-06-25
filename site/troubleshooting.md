@@ -73,6 +73,29 @@ running with now. Regenerate it against the *current* server:
 docker compose exec -T svix-server svix-server jwt generate | awk '{print $NF}'
 ```
 
+## The App Portal link opens a blank page / shows nothing
+
+The portal mechanism is fine (it works against the OSS svix-server) — the link
+is pointing at the wrong host. The most common cause is `SVIX_UI_PUBLIC_URL`
+being set to `http://localhost:3000`: the generated link then starts with
+`http://localhost:3000/portal/launch?...`, which loads nothing when opened from
+any machine other than the server itself.
+
+Check the link you generated — does it start with `localhost`? If so:
+
+- **Leave `SVIX_UI_PUBLIC_URL` blank** to use the operator's request origin
+  automatically, **or** set it to your real external URL (e.g.
+  `https://hooks.example.com`). Then recreate the container and generate a new
+  link.
+
+Two related checks if the page loads but is empty:
+
+- A **brand-new application has no endpoints**, so the portal correctly shows an
+  empty state with an **Add endpoint** button — that is expected, not an error.
+- If you instead see **"Portal session expired"** over plain HTTP, you are on an
+  image without the cookie fix — see
+  [Login succeeds but I stay on the login page](#login-succeeds-but-i-stay-on-the-login-page).
+
 ## App Portal shows "Link expired"
 
 Portal links are valid for 7 days. Generate a new link from the application's

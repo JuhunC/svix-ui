@@ -26,7 +26,9 @@ function readEnv(env: NodeJS.ProcessEnv) {
     sessionSecret: env.SVIX_UI_SESSION_SECRET,
     operatorUsername: env.SVIX_UI_OPERATOR_USERNAME,
     operatorPassword: env.SVIX_UI_OPERATOR_PASSWORD,
-    publicUrl: env.SVIX_UI_PUBLIC_URL,
+    // Treat blank as unset so callers fall back to the request origin (avoids a
+    // hard-coded localhost public URL leaking into App Portal links).
+    publicUrl: env.SVIX_UI_PUBLIC_URL?.trim() || undefined,
   };
 }
 
