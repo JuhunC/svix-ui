@@ -13,9 +13,7 @@ export default async function MessageDetailPage({
   return (
     <MessageDetailView
       messagePath={`/api/admin/apps/${app}/messages/${msg}`}
-      resendPath={(ep) =>
-        `/api/admin/apps/${app}/messages/${msg}/endpoints/${encodeURIComponent(ep)}/resend`
-      }
+      resendTemplate={`/api/admin/apps/${app}/messages/${msg}/endpoints/{endpointId}/resend`}
       backHref={`/console/applications/${app}/messages`}
     />
   );

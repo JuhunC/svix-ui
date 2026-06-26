@@ -12,9 +12,7 @@ export default async function PortalMessageDetailPage({
   return (
     <MessageDetailView
       messagePath={`/api/portal/messages/${msg}`}
-      resendPath={(ep) =>
-        `/api/portal/endpoints/${encodeURIComponent(ep)}/messages/${msg}/resend`
-      }
+      resendTemplate={`/api/portal/endpoints/{endpointId}/messages/${msg}/resend`}
       backHref="/portal/activity"
     />
   );

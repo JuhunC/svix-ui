@@ -17,11 +17,12 @@ import type { Message, MessageAttempt } from "@/lib/svix/types";
  */
 export function MessageDetailView({
   messagePath,
-  resendPath,
+  resendTemplate,
   backHref,
 }: {
   messagePath: string;
-  resendPath: (endpointId: string) => string;
+  /** Resend URL with a `{endpointId}` placeholder (server→client safe). */
+  resendTemplate: string;
   backHref: string;
 }) {
   const [message, setMessage] = useState<Message | null>(null);
@@ -50,7 +51,10 @@ export function MessageDetailView({
   async function resend(endpointId: string) {
     setResendingId(endpointId);
     try {
-      await apiSend("POST", resendPath(endpointId));
+      await apiSend(
+        "POST",
+        resendTemplate.replace("{endpointId}", encodeURIComponent(endpointId)),
+      );
       attempts.reload();
     } finally {
       setResendingId(null);
