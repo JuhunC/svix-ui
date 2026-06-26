@@ -1,0 +1,72 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: svix-ui
+          - generic [ref=e11]: Webhook settings
+      - navigation [ref=e12]:
+        - link "Endpoints" [ref=e13] [cursor=pointer]:
+          - /url: /portal/endpoints
+          - img [ref=e14]
+          - text: Endpoints
+        - link "Activity" [ref=e16] [cursor=pointer]:
+          - /url: /portal/activity
+          - img [ref=e17]
+          - text: Activity
+        - link "Event catalog" [ref=e19] [cursor=pointer]:
+          - /url: /portal/catalog
+          - img [ref=e20]
+          - text: Event catalog
+    - main [ref=e23]:
+      - generic [ref=e49]:
+        - link "Back" [ref=e50] [cursor=pointer]:
+          - /url: /portal/activity
+          - img [ref=e51]
+          - text: Back
+        - generic [ref=e54]: Request failed (404)
+        - generic [ref=e55]:
+          - heading "Delivery attempts" [level=2] [ref=e56]
+          - list [ref=e58]:
+            - listitem [ref=e59]:
+              - generic [ref=e60]:
+                - button "Failed — http://host.docker.internal:9099/" [ref=e61]:
+                  - img [ref=e62]
+                  - generic [ref=e64]: Failed
+                  - generic [ref=e65]: —
+                  - generic [ref=e66]: http://host.docker.internal:9099/
+                - generic [ref=e67]:
+                  - generic [ref=e68]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e69]
+            - listitem [ref=e70]:
+              - generic [ref=e71]:
+                - button "Failed — http://host.docker.internal:9099/" [ref=e72]:
+                  - img [ref=e73]
+                  - generic [ref=e75]: Failed
+                  - generic [ref=e76]: —
+                  - generic [ref=e77]: http://host.docker.internal:9099/
+                - generic [ref=e78]:
+                  - generic [ref=e79]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e80]
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - button "Failed — http://host.docker.internal:9099/" [ref=e83]:
+                  - img [ref=e84]
+                  - generic [ref=e86]: Failed
+                  - generic [ref=e87]: —
+                  - generic [ref=e88]: http://host.docker.internal:9099/
+                - generic [ref=e89]:
+                  - generic [ref=e90]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e91]
+            - listitem [ref=e92]:
+              - generic [ref=e93]:
+                - button "Failed — http://host.docker.internal:9099/" [ref=e94]:
+                  - img [ref=e95]
+                  - generic [ref=e97]: Failed
+                  - generic [ref=e98]: —
+                  - generic [ref=e99]: http://host.docker.internal:9099/
+                - generic [ref=e100]:
+                  - generic [ref=e101]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e102]
+  - alert [ref=e48]

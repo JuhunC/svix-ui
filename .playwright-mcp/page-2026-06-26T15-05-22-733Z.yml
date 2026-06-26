@@ -1,0 +1,92 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: svix-ui
+          - generic [ref=e11]: Operator console
+      - navigation [ref=e12]:
+        - link "Overview" [ref=e13] [cursor=pointer]:
+          - /url: /console
+          - img [ref=e14]
+          - text: Overview
+        - link "Applications" [ref=e19] [cursor=pointer]:
+          - /url: /console/applications
+          - img [ref=e20]
+          - text: Applications
+        - link "Event types" [ref=e24] [cursor=pointer]:
+          - /url: /console/event-types
+          - img [ref=e25]
+          - text: Event types
+      - generic [ref=e29]:
+        - generic [ref=e30]: admin
+        - button "Sign out" [ref=e31]:
+          - img [ref=e32]
+          - text: Sign out
+    - main [ref=e36]:
+      - generic [ref=e37]:
+        - link "Back" [ref=e38] [cursor=pointer]:
+          - /url: /console/applications/app_3FgA2BFLNWSmEhg9boQGRDdFGnq
+          - img [ref=e39]
+          - text: Back
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - heading "http://host.docker.internal:9099/" [level=1] [ref=e43]
+            - generic [ref=e44]:
+              - generic [ref=e45]: Active
+              - generic [ref=e46]: ep_3FgA2Bku4crfhgkujduiEQMD0rr
+          - generic [ref=e47]:
+            - button "Disable" [ref=e48]
+            - button "Delete" [ref=e49]:
+              - img [ref=e50]
+              - text: Delete
+        - navigation [ref=e54]:
+          - button "Overview" [ref=e55]
+          - button "Testing" [ref=e56]
+          - button "Advanced" [ref=e57]
+          - button "Activity" [active] [ref=e58]
+        - generic [ref=e135]:
+          - generic [ref=e136]:
+            - heading "Recent deliveries" [level=2] [ref=e137]:
+              - img [ref=e138]
+              - text: Recent deliveries
+            - button "Recover failed" [ref=e141]
+          - list [ref=e143]:
+            - listitem [ref=e144]:
+              - generic [ref=e145]:
+                - button "Failed —" [ref=e146]:
+                  - img [ref=e147]
+                  - generic [ref=e149]: Failed
+                  - generic [ref=e150]: —
+                - generic [ref=e151]:
+                  - generic [ref=e152]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e153]
+            - listitem [ref=e154]:
+              - generic [ref=e155]:
+                - button "Failed —" [ref=e156]:
+                  - img [ref=e157]
+                  - generic [ref=e159]: Failed
+                  - generic [ref=e160]: —
+                - generic [ref=e161]:
+                  - generic [ref=e162]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e163]
+            - listitem [ref=e164]:
+              - generic [ref=e165]:
+                - button "Failed —" [ref=e166]:
+                  - img [ref=e167]
+                  - generic [ref=e169]: Failed
+                  - generic [ref=e170]: —
+                - generic [ref=e171]:
+                  - generic [ref=e172]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e173]
+            - listitem [ref=e174]:
+              - generic [ref=e175]:
+                - button "Failed —" [ref=e176]:
+                  - img [ref=e177]
+                  - generic [ref=e179]: Failed
+                  - generic [ref=e180]: —
+                - generic [ref=e181]:
+                  - generic [ref=e182]: Jun 27, 2026, 12:02 AM
+                  - button "Resend" [ref=e183]
+  - alert [ref=e134]

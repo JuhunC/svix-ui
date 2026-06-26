@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: svix-ui
+          - generic [ref=e11]: Webhook settings
+      - navigation [ref=e12]:
+        - link "Endpoints" [ref=e13] [cursor=pointer]:
+          - /url: /portal/endpoints
+          - img [ref=e14]
+          - text: Endpoints
+        - link "Activity" [ref=e16] [cursor=pointer]:
+          - /url: /portal/activity
+          - img [ref=e17]
+          - text: Activity
+        - link "Event catalog" [ref=e19] [cursor=pointer]:
+          - /url: /portal/catalog
+          - img [ref=e20]
+          - text: Event catalog
+    - main [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - heading "Endpoints" [level=2] [ref=e26]
+          - button "Add endpoint" [ref=e27]:
+            - img [ref=e28]
+            - text: Add endpoint
+        - list [ref=e30]:
+          - listitem [ref=e31]:
+            - link "http://host.docker.internal:9099/" [ref=e33] [cursor=pointer]:
+              - /url: /portal/endpoints/ep_3FgA2Bku4crfhgkujduiEQMD0rr
+            - generic [ref=e34]:
+              - generic [ref=e35]: 2 ch
+              - generic [ref=e36]: 1 events
+              - generic [ref=e37]: Active
+  - alert [ref=e38]

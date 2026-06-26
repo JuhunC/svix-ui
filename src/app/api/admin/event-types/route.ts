@@ -18,9 +18,11 @@ const CreateEventType = z.object({
 
 export const GET = withAdmin(async ({ req, client }) => {
   const includeArchived = req.nextUrl.searchParams.get("includeArchived") === "true";
+  const withContent = req.nextUrl.searchParams.get("with_content") === "true";
   const page = await client.listEventTypes({
     ...listOptionsFromRequest(req),
     includeArchived,
+    withContent,
   });
   return NextResponse.json(page);
 });

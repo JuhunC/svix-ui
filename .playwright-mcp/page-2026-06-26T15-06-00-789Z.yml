@@ -1,0 +1,73 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: svix-ui
+          - generic [ref=e11]: Operator console
+      - navigation [ref=e12]:
+        - link "Overview" [ref=e13] [cursor=pointer]:
+          - /url: /console
+          - img [ref=e14]
+          - text: Overview
+        - link "Applications" [ref=e19] [cursor=pointer]:
+          - /url: /console/applications
+          - img [ref=e20]
+          - text: Applications
+        - link "Event types" [ref=e24] [cursor=pointer]:
+          - /url: /console/event-types
+          - img [ref=e25]
+          - text: Event types
+      - generic [ref=e29]:
+        - generic [ref=e30]: admin
+        - button "Sign out" [ref=e31]:
+          - img [ref=e32]
+          - text: Sign out
+    - main [ref=e36]:
+      - generic [ref=e37]:
+        - link "Back" [ref=e38] [cursor=pointer]:
+          - /url: /console/applications/app_3FgA2BFLNWSmEhg9boQGRDdFGnq
+          - img [ref=e39]
+          - text: Back
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - heading "http://host.docker.internal:9099/" [level=1] [ref=e43]
+            - generic [ref=e44]:
+              - generic [ref=e45]: Active
+              - generic [ref=e46]: ep_3FgA2Bku4crfhgkujduiEQMD0rr
+          - generic [ref=e47]:
+            - button "Disable" [ref=e48]
+            - button "Delete" [ref=e49]:
+              - img [ref=e50]
+              - text: Delete
+        - navigation [ref=e54]:
+          - button "Overview" [ref=e55]
+          - button "Testing" [ref=e56]
+          - button "Advanced" [active] [ref=e57]
+          - button "Activity" [ref=e58]
+        - generic [ref=e59]:
+          - generic [ref=e197]:
+            - heading "Rate limit" [level=2] [ref=e199]:
+              - img [ref=e200]
+              - text: Rate limit
+            - paragraph [ref=e202]: Cap delivery throughput to this endpoint. Leave blank for no limit.
+            - generic [ref=e203]:
+              - generic [ref=e205]:
+                - generic [ref=e206]: Messages per second
+                - spinbutton "Messages per second" [ref=e207]
+              - button "Save" [ref=e209]
+          - generic [ref=e210]:
+            - heading "Custom headers" [level=2] [ref=e212]:
+              - img [ref=e213]
+              - text: Custom headers
+            - paragraph [ref=e216]: Extra HTTP headers sent with every delivery to this endpoint.
+            - generic [ref=e217]:
+              - button "Add header" [ref=e218]
+              - button "Save headers" [ref=e219]
+          - generic [ref=e220]:
+            - heading "Transformation" [level=2] [ref=e222]:
+              - img [ref=e223]
+              - text: Transformation
+            - generic [ref=e227]: Transformations aren't supported by this svix-server build. Custom headers above still apply to every delivery.
+  - alert [ref=e134]

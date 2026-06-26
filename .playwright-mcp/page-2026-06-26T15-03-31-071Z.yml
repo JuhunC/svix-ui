@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e18]
+  - generic [ref=e19]:
+    - complementary [ref=e20]:
+      - generic [ref=e22]:
+        - img [ref=e24]
+        - generic [ref=e26]:
+          - generic [ref=e27]: svix-ui
+          - generic [ref=e28]: Operator console
+      - navigation [ref=e29]:
+        - link "Overview" [ref=e30] [cursor=pointer]:
+          - /url: /console
+          - img [ref=e31]
+          - text: Overview
+        - link "Applications" [ref=e36] [cursor=pointer]:
+          - /url: /console/applications
+          - img [ref=e37]
+          - text: Applications
+        - link "Event types" [ref=e41] [cursor=pointer]:
+          - /url: /console/event-types
+          - img [ref=e42]
+          - text: Event types
+      - generic [ref=e46]:
+        - generic [ref=e47]: admin
+        - button "Sign out" [ref=e48]:
+          - img [ref=e49]
+          - text: Sign out
+    - main [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e56]:
+          - heading "Operator console" [level=1] [ref=e57]
+          - paragraph [ref=e58]: Manage applications, event types, endpoints, and deliveries on your self-hosted Svix server.
+        - generic [ref=e59]:
+          - link "Applications Create tenants, manage their endpoints, and open the consumer App Portal." [ref=e60] [cursor=pointer]:
+            - /url: /console/applications
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - img [ref=e64]
+                - heading "Applications" [level=2] [ref=e68]
+              - paragraph [ref=e69]: Create tenants, manage their endpoints, and open the consumer App Portal.
+          - link "Event types Define the catalog of events your applications can emit, with JSON schemas." [ref=e70] [cursor=pointer]:
+            - /url: /console/event-types
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - img [ref=e74]
+                - heading "Event types" [level=2] [ref=e77]
+              - paragraph [ref=e78]: Define the catalog of events your applications can emit, with JSON schemas.

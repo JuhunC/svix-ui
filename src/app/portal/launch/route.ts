@@ -5,6 +5,7 @@ import { isRequestSecure } from "@/lib/auth/server";
 import { PORTAL_COOKIE, portalCookieOptions } from "@/lib/api/portal";
 
 const DEFAULT_TTL = 60 * 60 * 24 * 7;
+const MAX_TTL = 60 * 60 * 24 * 30; // cap sealed-cookie lifetime at 30 days
 
 /**
  * Relative redirect. The browser resolves the Location against the address-bar
@@ -31,7 +32,10 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   const appId = req.nextUrl.searchParams.get("app");
   const expParam = Number(req.nextUrl.searchParams.get("exp"));
-  const ttl = Number.isFinite(expParam) && expParam > 0 ? expParam : DEFAULT_TTL;
+  const ttl = Math.min(
+    Number.isFinite(expParam) && expParam > 0 ? expParam : DEFAULT_TTL,
+    MAX_TTL,
+  );
 
   if (!token || !appId) {
     return redirectTo("/portal/expired");
