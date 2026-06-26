@@ -18,14 +18,31 @@ own webhook endpoints. It is the headline feature that the open-source
 
 ## What the consumer can do
 
-When a customer opens their portal link, they get a focused page scoped to a
-single application — *their* application. From it they can:
+When a customer opens their portal link, they get a sidebar dashboard scoped to
+a single application — *their* application — with **Endpoints**, **Activity**,
+and **Event catalog** sections, mirroring the hosted Svix App Portal. From it
+they can:
 
-- Add, edit, enable/disable, and delete **their endpoints**.
-- **Reveal** and **rotate** their endpoint **signing secret**.
-- Choose which **event types** each endpoint subscribes to.
-- Manage **custom headers** on their endpoints.
-- See **recent deliveries** and **resend** or **recover** failed ones.
+- **Endpoints** — add (with event-type selection from the catalog, channels,
+  and advanced rate-limit/secret options), edit, enable/disable, and delete.
+  Each endpoint has tabbed detail (Overview / Testing / Advanced / Activity)
+  with a delivery **stats strip**.
+- **Reveal** and **rotate** the endpoint **signing secret**.
+- Choose **event-type subscriptions** (catalog-driven checkboxes) and
+  **channels**; set a per-endpoint **rate limit** and **custom headers**.
+- **Activity** — a filterable log of events (by event type, channel, time
+  range). Open any message to see its **payload** and full **attempt history**:
+  per-attempt response body, status code, duration, trigger, and **resend**.
+- **Event catalog** — browse event types grouped by prefix, with JSON Schema
+  and a generated **example payload**.
+- **Recover** failed deliveries over a chosen time window (presets or custom
+  since/until).
+
+{: .note }
+Two App Portal features depend on the svix-server build: **transformations** and
+**send-test-event**. The open-source `svix-server` (tested 1.96.0) doesn't
+support them, so svix-ui shows an explained "not supported" state rather than an
+error.
 
 They **cannot** see other tenants, your admin token, your event-type management,
 or anything outside their application.

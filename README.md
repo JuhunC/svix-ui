@@ -1,10 +1,13 @@
 # svix-ui — an open-source web UI for self-hosted Svix Webhooks
 
 > **📖 User guides:** **<https://juhunc.github.io/svix-ui/>**
-> · **Image:** `ghcr.io/juhunc/svix-ui:latest` · **License:** MIT
+> · **Image:** `ghcr.io/juhunc/svix-ui:1.0.0` (`:latest`) · **License:** MIT
 >
-> Operator console + consumer App Portal for the self-hosted Svix webhooks
-> server, shipped as a single container. See [Getting started](https://juhunc.github.io/svix-ui/getting-started.html).
+> Operator console + a consumer **App Portal** at feature/design parity with the
+> hosted Svix dashboard — endpoints (events, channels, rate limit, secret,
+> headers), a filterable Activity log with full attempt history, an event
+> catalog, and recovery — all over the open-source `svix-server` API, shipped as
+> a single container. See [Getting started](https://juhunc.github.io/svix-ui/getting-started.html).
 
 ## The one-paragraph pitch
 
