@@ -22,7 +22,7 @@ import {
   cn,
 } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
-import { ChipInput } from "@/components/overlay";
+import { ChipInput, Modal } from "@/components/overlay";
 import {
   EventTypePicker,
   catalogPathFor,
@@ -861,16 +861,129 @@ function AttemptMeta({ label, value }: { label: string; value: string }) {
   );
 }
 
+const RECOVER_PRESETS: Array<[string, string]> = [
+  ["1h", "Last hour"],
+  ["24h", "Last 24 hours"],
+  ["7d", "Last 7 days"],
+  ["custom", "Custom range"],
+];
+
+function RecoverModal({
+  open,
+  base,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  base: string;
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
+  const [preset, setPreset] = useState("24h");
+  const [since, setSince] = useState("");
+  const [until, setUntil] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    let sinceIso: string;
+    let untilIso: string | undefined;
+    if (preset === "custom") {
+      if (!since) {
+        setError("Pick a start time.");
+        setBusy(false);
+        return;
+      }
+      sinceIso = new Date(since).toISOString();
+      untilIso = until ? new Date(until).toISOString() : undefined;
+    } else {
+      const hours = preset === "1h" ? 1 : preset === "7d" ? 24 * 7 : 24;
+      sinceIso = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    }
+    try {
+      const res = await apiSend<{ status?: string }>("POST", `${base}/recover`, {
+        since: sinceIso,
+        until: untilIso,
+      });
+      onDone(
+        `Recovery ${res?.status ? `(${res.status})` : "queued"} — failed messages are being re-sent.`,
+      );
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to start recovery");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Recover failed messages"
+      footer={
+        <>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={run} disabled={busy}>
+            {busy ? "Starting…" : "Start recovery"}
+          </Button>
+        </>
+      }
+    >
+      <p className="text-sm text-zinc-500">
+        Re-send messages that failed delivery to this endpoint within a time
+        window. Svix limits recovery to the last 14 days.
+      </p>
+      {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
+      <div className="mt-4 space-y-2">
+        {RECOVER_PRESETS.map(([k, l]) => (
+          <label key={k} className="flex items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="radio"
+              checked={preset === k}
+              onChange={() => setPreset(k)}
+            />
+            {l}
+          </label>
+        ))}
+      </div>
+      {preset === "custom" ? (
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <Field label="Since" htmlFor="rec-since">
+            <Input
+              id="rec-since"
+              type="datetime-local"
+              value={since}
+              onChange={(e) => setSince(e.target.value)}
+            />
+          </Field>
+          <Field label="Until (optional)" htmlFor="rec-until">
+            <Input
+              id="rec-until"
+              type="datetime-local"
+              value={until}
+              onChange={(e) => setUntil(e.target.value)}
+            />
+          </Field>
+        </div>
+      ) : null}
+    </Modal>
+  );
+}
+
 function DeliveriesCard({ base }: { base: string }) {
   const attempts = usePaginatedList<MessageAttempt>(
     `${base}/attempts?with_content=true`,
     15,
   );
-  const [recovering, setRecovering] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [recoverOpen, setRecoverOpen] = useState(false);
 
   async function resend(attemptId: string, msgId: string) {
     setResendingId(attemptId);
@@ -885,29 +998,20 @@ function DeliveriesCard({ base }: { base: string }) {
     }
   }
 
-  async function recover(hours: number) {
-    setRecovering(true);
-    setNotice(null);
-    setError(null);
-    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
-    try {
-      await apiSend("POST", `${base}/recover`, { since });
-      setNotice(`Recovery of failed messages from the last ${hours}h was queued.`);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Failed to start recovery");
-    } finally {
-      setRecovering(false);
-    }
-  }
-
   return (
     <Card className="p-5">
+      <RecoverModal
+        open={recoverOpen}
+        base={base}
+        onClose={() => setRecoverOpen(false)}
+        onDone={(msg) => {
+          setRecoverOpen(false);
+          setNotice(msg);
+        }}
+      />
       <CardHeading icon="activity" title="Recent deliveries">
-        <Button variant="secondary" size="sm" onClick={() => recover(1)} disabled={recovering}>
-          Recover 1h
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => recover(24)} disabled={recovering}>
-          Recover 24h
+        <Button variant="secondary" size="sm" onClick={() => setRecoverOpen(true)}>
+          Recover failed
         </Button>
       </CardHeading>
 

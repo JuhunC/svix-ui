@@ -1,4 +1,4 @@
-import { MessageDetail } from "@/components/messages/message-detail";
+import { MessageDetailView } from "@/components/messages/message-detail";
 
 export const dynamic = "force-dynamic";
 
@@ -8,5 +8,15 @@ export default async function MessageDetailPage({
   params: Promise<{ appId: string; msgId: string }>;
 }) {
   const { appId, msgId } = await params;
-  return <MessageDetail appId={appId} msgId={msgId} />;
+  const app = encodeURIComponent(appId);
+  const msg = encodeURIComponent(msgId);
+  return (
+    <MessageDetailView
+      messagePath={`/api/admin/apps/${app}/messages/${msg}`}
+      resendPath={(ep) =>
+        `/api/admin/apps/${app}/messages/${msg}/endpoints/${encodeURIComponent(ep)}/resend`
+      }
+      backHref={`/console/applications/${app}/messages`}
+    />
+  );
 }
