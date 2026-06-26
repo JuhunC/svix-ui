@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { listOptionsFromRequest, withAdmin } from "@/lib/api/admin";
+import { listQueryFromRequest, withAdmin } from "@/lib/api/admin";
 
 const CreateMessage = z.object({
   eventType: z.string().min(1),
@@ -10,7 +10,7 @@ const CreateMessage = z.object({
 });
 
 export const GET = withAdmin<{ appId: string }>(async ({ req, client, params }) => {
-  const page = await client.listMessages(params.appId, listOptionsFromRequest(req));
+  const page = await client.listMessages(params.appId, listQueryFromRequest(req));
   return NextResponse.json(page);
 });
 

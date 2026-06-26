@@ -25,7 +25,10 @@ export const HeadersBody = z.object({
   headers: z.record(z.string(), z.string()),
 });
 
-export const RecoverBody = z.object({ since: z.string().min(1) });
+export const RecoverBody = z.object({
+  since: z.string().min(1),
+  until: z.string().min(1).optional(),
+});
 
 export const SendExample = z.object({ eventType: z.string().min(1) });
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listOptionsFromRequest } from "@/lib/api/admin";
+import { listQueryFromRequest } from "@/lib/api/admin";
 import { withPortal } from "@/lib/api/portal";
 
 export const GET = withPortal<{ msgId: string }>(
@@ -7,7 +7,7 @@ export const GET = withPortal<{ msgId: string }>(
     const page = await client.listAttemptsByMessage(
       appId,
       params.msgId,
-      listOptionsFromRequest(req),
+      listQueryFromRequest(req),
     );
     return NextResponse.json(page);
   },

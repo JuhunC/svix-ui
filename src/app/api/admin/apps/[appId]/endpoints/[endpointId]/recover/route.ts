@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { withAdmin } from "@/lib/api/admin";
-
-const RecoverBody = z.object({ since: z.string().min(1) });
+import { RecoverBody } from "@/lib/api/schemas";
 
 type Params = { appId: string; endpointId: string };
 
@@ -15,6 +13,11 @@ export const POST = withAdmin<Params>(async ({ req, client, params }) => {
       { status: 400 },
     );
   }
-  await client.recoverEndpoint(params.appId, params.endpointId, parsed.data.since);
-  return new NextResponse(null, { status: 202 });
+  const task = await client.recoverEndpoint(
+    params.appId,
+    params.endpointId,
+    parsed.data.since,
+    parsed.data.until,
+  );
+  return NextResponse.json(task ?? {}, { status: 202 });
 });

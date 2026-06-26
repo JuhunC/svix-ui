@@ -11,6 +11,18 @@ export interface ListOptions {
   order?: Ordering;
 }
 
+/** Superset of ListOptions carrying message/attempt filters. */
+export interface ListQuery extends ListOptions {
+  eventTypes?: string[];
+  channel?: string;
+  before?: string;
+  after?: string;
+  status?: number;
+  statusCodeClass?: number;
+  tag?: string;
+  withContent?: boolean;
+}
+
 /** Cursor-paginated envelope returned by every list endpoint. */
 export interface ListResponse<T> {
   data: T[];
@@ -146,7 +158,12 @@ export interface MessageIn {
   payloadRetentionPeriod?: number;
 }
 
-export type MessageStatus = "success" | "pending" | "fail" | "sending";
+export type MessageStatus =
+  | "success"
+  | "pending"
+  | "fail"
+  | "sending"
+  | "canceled";
 
 export interface MessageAttempt {
   id: string;

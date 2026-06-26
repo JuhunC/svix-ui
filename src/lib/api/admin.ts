@@ -3,7 +3,7 @@ import { getAdminClient } from "@/lib/config";
 import { getOperatorSession } from "@/lib/auth/server";
 import type { SessionPayload } from "@/lib/auth/session";
 import type { SvixClient } from "@/lib/svix/client";
-import type { ListOptions, Ordering } from "@/lib/svix/types";
+import type { ListOptions, ListQuery, Ordering } from "@/lib/svix/types";
 import { SvixApiError, SvixConfigError } from "@/lib/svix/errors";
 
 export interface AdminContext<P extends Record<string, string>> {
@@ -69,5 +69,29 @@ export function listOptionsFromRequest(req: NextRequest): ListOptions {
     limit: limit ? Number(limit) : undefined,
     iterator: sp.get("iterator") ?? undefined,
     order,
+  };
+}
+
+/** Parses the full message/attempt filter set from the request query string. */
+export function listQueryFromRequest(req: NextRequest): ListQuery {
+  const sp = req.nextUrl.searchParams;
+  const num = (k: string) => {
+    const v = sp.get(k);
+    return v !== null && v !== "" && Number.isFinite(Number(v))
+      ? Number(v)
+      : undefined;
+  };
+  const str = (k: string) => sp.get(k) || undefined;
+  const eventTypes = sp.get("event_types");
+  return {
+    ...listOptionsFromRequest(req),
+    eventTypes: eventTypes ? eventTypes.split(",").filter(Boolean) : undefined,
+    channel: str("channel"),
+    before: str("before"),
+    after: str("after"),
+    status: num("status"),
+    statusCodeClass: num("status_code_class"),
+    tag: str("tag"),
+    withContent: sp.get("with_content") === "true",
   };
 }

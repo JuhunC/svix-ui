@@ -16,6 +16,7 @@ import type {
   EventTypePatch,
   HealthStatus,
   ListOptions,
+  ListQuery,
   ListResponse,
   Message,
   MessageAttempt,
@@ -262,12 +263,13 @@ export class SvixClient {
     appId: string,
     endpointId: string,
     since: string,
+    until?: string,
     idempotencyKey = newIdempotencyKey(),
-  ): Promise<void> {
+  ): Promise<{ id?: string; status?: string; task?: string }> {
     return this.request(
       "POST",
       `${API}/app/${enc(appId)}/endpoint/${enc(endpointId)}/recover`,
-      { body: { since }, idempotencyKey },
+      { body: until ? { since, until } : { since }, idempotencyKey },
     );
   }
 
@@ -309,11 +311,15 @@ export class SvixClient {
   // --- Event types -------------------------------------------------------
 
   listEventTypes(
-    opts: ListOptions & { includeArchived?: boolean } = {},
+    opts: ListOptions & { includeArchived?: boolean; withContent?: boolean } = {},
   ): Promise<ListResponse<EventType>> {
-    const { includeArchived, ...rest } = opts;
+    const { includeArchived, withContent, ...rest } = opts;
     return this.request("GET", `${API}/event-type`, {
-      query: { ...rest, include_archived: includeArchived },
+      query: {
+        ...rest,
+        include_archived: includeArchived,
+        with_content: withContent,
+      },
     });
   }
 
@@ -351,14 +357,18 @@ export class SvixClient {
 
   listMessages(
     appId: string,
-    opts: ListOptions & { eventTypes?: string[]; channel?: string } = {},
+    opts: ListQuery = {},
   ): Promise<ListResponse<Message>> {
-    const { eventTypes, channel, ...rest } = opts;
+    const { eventTypes, channel, before, after, tag, ...rest } = opts;
     return this.request("GET", `${API}/app/${enc(appId)}/msg`, {
       query: {
-        ...rest,
+        limit: rest.limit,
+        iterator: rest.iterator,
         event_types: eventTypes?.join(","),
         channel,
+        before,
+        after,
+        tag,
       },
     });
   }
@@ -383,24 +393,24 @@ export class SvixClient {
   listAttemptsByMessage(
     appId: string,
     msgId: string,
-    opts: ListOptions = {},
+    opts: ListQuery = {},
   ): Promise<ListResponse<MessageAttempt>> {
     return this.request(
       "GET",
       `${API}/app/${enc(appId)}/attempt/msg/${enc(msgId)}`,
-      { query: { ...opts } },
+      { query: attemptQuery(opts) },
     );
   }
 
   listAttemptsByEndpoint(
     appId: string,
     endpointId: string,
-    opts: ListOptions = {},
+    opts: ListQuery = {},
   ): Promise<ListResponse<MessageAttempt>> {
     return this.request(
       "GET",
       `${API}/app/${enc(appId)}/attempt/endpoint/${enc(endpointId)}`,
-      { query: { ...opts } },
+      { query: attemptQuery(opts) },
     );
   }
 
@@ -434,6 +444,22 @@ export class SvixClient {
 
 function enc(segment: string): string {
   return encodeURIComponent(segment);
+}
+
+function attemptQuery(
+  opts: ListQuery,
+): Record<string, string | number | boolean | undefined> {
+  return {
+    limit: opts.limit,
+    iterator: opts.iterator,
+    status: opts.status,
+    status_code_class: opts.statusCodeClass,
+    channel: opts.channel,
+    event_types: opts.eventTypes?.join(","),
+    before: opts.before,
+    after: opts.after,
+    with_content: opts.withContent,
+  };
 }
 
 function extractMessage(body: unknown, status: number): string {

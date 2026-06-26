@@ -11,6 +11,11 @@ export const POST = withPortal<{ endpointId: string }>(async ({ req, client, app
       { status: 400 },
     );
   }
-  await client.recoverEndpoint(appId, params.endpointId, parsed.data.since);
-  return new NextResponse(null, { status: 202 });
+  const task = await client.recoverEndpoint(
+    appId,
+    params.endpointId,
+    parsed.data.since,
+    parsed.data.until,
+  );
+  return NextResponse.json(task ?? {}, { status: 202 });
 });
