@@ -50,6 +50,7 @@ export function EndpointDetail({
 }) {
   const router = useRouter();
   const base = apiBase;
+  const isPortal = apiBase.startsWith("/api/portal");
   const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,7 +165,12 @@ export function EndpointDetail({
         ) : null}
 
         {tab === "testing" ? (
-          <SendExampleCard base={base} endpoint={endpoint} onSent={() => setTab("activity")} />
+          <SendExampleCard
+            base={base}
+            endpoint={endpoint}
+            isPortal={isPortal}
+            onSent={() => setTab("activity")}
+          />
         ) : null}
 
         {tab === "advanced" ? (
@@ -348,28 +354,54 @@ function SubscriptionsCard({
 function SendExampleCard({
   base,
   endpoint,
+  isPortal,
   onSent,
 }: {
   base: string;
   endpoint: Endpoint;
+  isPortal: boolean;
   onSent: () => void;
 }) {
   const suggestions = endpoint.filterTypes ?? [];
   const [eventType, setEventType] = useState(suggestions[0] ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unsupported, setUnsupported] = useState(false);
   const [sent, setSent] = useState(false);
+
+  // App Portal tokens are not permitted to send example events on svix-server,
+  // so guard the consumer view rather than show a 403.
+  if (isPortal) {
+    return (
+      <Card className="p-5">
+        <CardHeading icon="send" title="Send a test event" />
+        <div className="mt-3">
+          <Alert tone="info">
+            Sending test events isn&apos;t available from the App Portal. Ask your
+            provider to trigger one from their console.
+          </Alert>
+        </div>
+      </Card>
+    );
+  }
 
   async function send(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setUnsupported(false);
     setSent(false);
     try {
       await apiSend("POST", `${base}/send-example`, { eventType });
       setSent(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to send");
+      // svix-server cannot always generate an example (400) and may forbid it
+      // (403); surface that as an expected, explained state rather than an error.
+      if (err instanceof ApiError && (err.status === 400 || err.status === 403)) {
+        setUnsupported(true);
+      } else {
+        setError(err instanceof ApiError ? err.message : "Failed to send");
+      }
     } finally {
       setBusy(false);
     }
@@ -405,6 +437,15 @@ function SendExampleCard({
               <option key={s} value={s} />
             ))}
           </datalist>
+        ) : null}
+        {unsupported ? (
+          <div className="mt-3">
+            <Alert tone="info">
+              This svix-server build can&apos;t generate an example for this event
+              type. Example generation isn&apos;t supported on every svix-server
+              version — you can still trigger a real event from your application.
+            </Alert>
+          </div>
         ) : null}
         {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
         {sent ? (
@@ -526,6 +567,8 @@ function TransformationCard({ base }: { base: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // null = loading, true = server supports it, false = not on this svix-server.
+  const [supported, setSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -534,8 +577,13 @@ function TransformationCard({ base }: { base: string }) {
         if (!active) return;
         setEnabled(Boolean(t.enabled));
         setCode(t.code ?? "");
+        setSupported(true);
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (!active) return;
+        // svix-server builds without transformations return 404 for this route.
+        setSupported(!(e instanceof ApiError && e.status === 404));
+      });
     return () => {
       active = false;
     };
@@ -556,6 +604,20 @@ function TransformationCard({ base }: { base: string }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (supported === false) {
+    return (
+      <Card className="p-5">
+        <CardHeading icon="code" title="Transformation" />
+        <div className="mt-3">
+          <Alert tone="info">
+            Transformations aren&apos;t supported by this svix-server build.
+            Custom headers above still apply to every delivery.
+          </Alert>
+        </div>
+      </Card>
+    );
   }
 
   return (
