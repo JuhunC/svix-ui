@@ -12,6 +12,11 @@ import {
   Input,
 } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { Modal, ChipInput } from "@/components/overlay";
+import {
+  EventTypePicker,
+  catalogPathFor,
+} from "@/components/endpoints/event-type-picker";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
 import type { Endpoint } from "@/lib/svix/types";
@@ -28,32 +33,27 @@ export function EndpointsSection({
   const base = apiBase;
   const { items, done, loading, error, loadMore, reload } =
     usePaginatedList<Endpoint>(base);
-  const [creating, setCreating] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   return (
     <section className="mt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-zinc-900">{heading}</h2>
-        <Button size="sm" onClick={() => setCreating((v) => !v)}>
-          {creating ? (
-            "Cancel"
-          ) : (
-            <>
-              <Icon name="plus" size={15} /> Add endpoint
-            </>
-          )}
+        <Button size="sm" onClick={() => setAdding(true)}>
+          <Icon name="plus" size={15} /> Add endpoint
         </Button>
       </div>
 
-      {creating ? (
-        <CreateEndpointForm
-          base={base}
-          onCreated={() => {
-            setCreating(false);
-            reload();
-          }}
-        />
-      ) : null}
+      <AddEndpointModal
+        open={adding}
+        base={base}
+        catalogPath={catalogPathFor(base)}
+        onClose={() => setAdding(false)}
+        onCreated={() => {
+          setAdding(false);
+          reload();
+        }}
+      />
 
       {error ? (
         <div className="mt-3">
@@ -67,7 +67,12 @@ export function EndpointsSection({
             <EmptyState
               icon={<Icon name="endpoints" />}
               title="No endpoints"
-              description="Add an endpoint URL to start delivering webhooks to this tenant."
+              description="Add an endpoint URL to start receiving webhooks."
+              action={
+                <Button size="sm" onClick={() => setAdding(true)}>
+                  <Icon name="plus" size={15} /> Add endpoint
+                </Button>
+              }
             />
           </div>
         ) : (
@@ -86,15 +91,18 @@ export function EndpointsSection({
                   ) : null}
                 </div>
                 <div className="ml-3 flex shrink-0 items-center gap-2">
-                  {ep.disabled ? (
-                    <Badge tone="danger">Disabled</Badge>
-                  ) : (
-                    <Badge tone="success">Active</Badge>
-                  )}
+                  {ep.channels && ep.channels.length > 0 ? (
+                    <Badge tone="neutral">{ep.channels.length} ch</Badge>
+                  ) : null}
                   {ep.filterTypes && ep.filterTypes.length > 0 ? (
                     <Badge tone="info">{ep.filterTypes.length} events</Badge>
                   ) : (
                     <Badge>All events</Badge>
+                  )}
+                  {ep.disabled ? (
+                    <Badge tone="danger">Disabled</Badge>
+                  ) : (
+                    <Badge tone="success">Active</Badge>
                   )}
                 </div>
               </li>
@@ -114,27 +122,54 @@ export function EndpointsSection({
   );
 }
 
-function CreateEndpointForm({
+function AddEndpointModal({
+  open,
   base,
+  catalogPath,
+  onClose,
   onCreated,
 }: {
+  open: boolean;
   base: string;
+  catalogPath: string;
+  onClose: () => void;
   onCreated: () => void;
 }) {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
+  const [filterTypes, setFilterTypes] = useState<string[] | null>(null);
+  const [channels, setChannels] = useState<string[]>([]);
+  const [rateLimit, setRateLimit] = useState("");
+  const [secret, setSecret] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
+  function reset() {
+    setUrl("");
+    setDescription("");
+    setFilterTypes(null);
+    setChannels([]);
+    setRateLimit("");
+    setSecret("");
+    setShowAdvanced(false);
+    setError(null);
+  }
+
+  async function submit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
       await apiSend("POST", base, {
         url,
-        description: description.trim() ? description.trim() : undefined,
+        description: description.trim() || undefined,
+        filterTypes: filterTypes && filterTypes.length > 0 ? filterTypes : undefined,
+        channels: channels.length > 0 ? channels : undefined,
+        rateLimit: rateLimit ? Number(rateLimit) : undefined,
+        secret: secret.trim() || undefined,
       });
+      reset();
       onCreated();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to add endpoint");
@@ -144,13 +179,27 @@ function CreateEndpointForm({
   }
 
   return (
-    <Card className="mt-3 p-5">
-      <form onSubmit={onSubmit}>
-        {error ? (
-          <div className="mb-4">
-            <Alert>{error}</Alert>
-          </div>
-        ) : null}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Add endpoint"
+      footer={
+        <>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={submit}
+            disabled={submitting || !url.trim()}
+          >
+            {submitting ? "Adding…" : "Add endpoint"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={submit}>
+        {error ? <div className="mb-4"><Alert>{error}</Alert></div> : null}
         <Field label="Endpoint URL" htmlFor="ep-url">
           <Input
             id="ep-url"
@@ -169,12 +218,59 @@ function CreateEndpointForm({
             placeholder="Production receiver"
           />
         </Field>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={submitting || !url.trim()}>
-            {submitting ? "Adding…" : "Add endpoint"}
-          </Button>
-        </div>
+        <Field label="Subscribe to events">
+          <EventTypePicker
+            catalogPath={catalogPath}
+            value={filterTypes}
+            onChange={setFilterTypes}
+          />
+        </Field>
+        <Field
+          label="Channels (optional)"
+          hint="Deliver only messages tagged with these channels."
+        >
+          <ChipInput
+            values={channels}
+            onChange={setChannels}
+            placeholder="Add a channel and press Enter"
+          />
+        </Field>
+
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          {showAdvanced ? "Hide advanced" : "Advanced"}
+        </button>
+        {showAdvanced ? (
+          <div className="mt-3 space-y-4 rounded-md border border-zinc-200 p-4">
+            <Field label="Rate limit (messages/sec, optional)" htmlFor="ep-rate">
+              <Input
+                id="ep-rate"
+                type="number"
+                min={1}
+                value={rateLimit}
+                onChange={(e) => setRateLimit(e.target.value)}
+                placeholder="No limit"
+              />
+            </Field>
+            <Field
+              label="Signing secret (optional)"
+              htmlFor="ep-secret"
+              hint="Leave blank to have one generated (whsec_…)."
+            >
+              <Input
+                id="ep-secret"
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                placeholder="whsec_…"
+                className="font-mono"
+              />
+            </Field>
+          </div>
+        ) : null}
       </form>
-    </Card>
+    </Modal>
   );
 }

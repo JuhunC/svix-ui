@@ -14,12 +14,19 @@ import {
   Badge,
   Button,
   Card,
+  Field,
   Input,
   Spinner,
   Tabs,
   Textarea,
+  cn,
 } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
+import { ChipInput } from "@/components/overlay";
+import {
+  EventTypePicker,
+  catalogPathFor,
+} from "@/components/endpoints/event-type-picker";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import { formatDateTime } from "@/lib/format";
@@ -28,6 +35,7 @@ import type {
   Endpoint,
   EndpointHeaders,
   EndpointSecret,
+  EndpointStats,
   EndpointTransformation,
   MessageAttempt,
 } from "@/lib/svix/types";
@@ -145,6 +153,7 @@ export function EndpointDetail({
       <div className="mt-6 space-y-4">
         {tab === "overview" ? (
           <>
+            <StatsStrip base={base} />
             <Card className="p-5">
               <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <Detail label="Created" value={formatDateTime(endpoint.createdAt)} />
@@ -152,10 +161,6 @@ export function EndpointDetail({
                 <Detail
                   label="Rate limit"
                   value={endpoint.rateLimit ? `${endpoint.rateLimit}/s` : "—"}
-                />
-                <Detail
-                  label="Channels"
-                  value={endpoint.channels?.length ? endpoint.channels.join(", ") : "—"}
                 />
               </dl>
             </Card>
@@ -175,6 +180,7 @@ export function EndpointDetail({
 
         {tab === "advanced" ? (
           <>
+            <RateLimitCard base={base} endpoint={endpoint} onSaved={reload} />
             <HeadersCard base={base} />
             <TransformationCard base={base} />
           </>
@@ -281,26 +287,25 @@ function SubscriptionsCard({
   endpoint: Endpoint;
   onSaved: () => Promise<void> | void;
 }) {
-  const initialSelected = (endpoint.filterTypes ?? []).length > 0;
-  const [mode, setMode] = useState<"all" | "selected">(
-    initialSelected ? "selected" : "all",
+  const [filterTypes, setFilterTypes] = useState<string[] | null>(
+    endpoint.filterTypes && endpoint.filterTypes.length > 0
+      ? endpoint.filterTypes
+      : null,
   );
-  const [text, setText] = useState((endpoint.filterTypes ?? []).join(", "));
+  const [channels, setChannels] = useState<string[]>(endpoint.channels ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  async function save(e: FormEvent) {
-    e.preventDefault();
+  async function save() {
     setBusy(true);
     setError(null);
     setSaved(false);
-    const filterTypes =
-      mode === "all"
-        ? null
-        : text.split(",").map((s) => s.trim()).filter(Boolean);
     try {
-      await apiSend("PATCH", base, { filterTypes });
+      await apiSend("PATCH", base, {
+        filterTypes: filterTypes && filterTypes.length > 0 ? filterTypes : null,
+        channels: channels.length > 0 ? channels : null,
+      });
       await onSaved();
       setSaved(true);
     } catch (err) {
@@ -314,39 +319,138 @@ function SubscriptionsCard({
     <Card className="p-5">
       <CardHeading icon="tag" title="Subscriptions" />
       <p className="mt-1 text-sm text-zinc-500">
-        Choose which event types this endpoint receives.
+        Choose which event types this endpoint receives, and optionally restrict
+        it to specific channels.
       </p>
-      <form onSubmit={save} className="mt-3">
-        <label className="flex items-center gap-2 text-sm text-zinc-700">
-          <input type="radio" checked={mode === "all"} onChange={() => setMode("all")} />
-          All event types
-        </label>
-        <label className="mt-2 flex items-center gap-2 text-sm text-zinc-700">
-          <input
-            type="radio"
-            checked={mode === "selected"}
-            onChange={() => setMode("selected")}
+      <div className="mt-3">
+        <EventTypePicker
+          catalogPath={catalogPathFor(base)}
+          value={filterTypes}
+          onChange={setFilterTypes}
+        />
+      </div>
+      <div className="mt-4">
+        <Field
+          label="Channels"
+          hint="Only deliver messages tagged with these channels (leave empty for all)."
+        >
+          <ChipInput
+            values={channels}
+            onChange={setChannels}
+            placeholder="Add a channel and press Enter"
           />
-          Selected event types
-        </label>
-        {mode === "selected" ? (
-          <div className="mt-2">
-            <Input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="invoice.paid, invoice.payment_failed"
-            />
-            <p className="mt-1 text-xs text-zinc-500">Comma-separated event type names.</p>
+        </Field>
+      </div>
+      {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
+      <div className="mt-3 flex items-center gap-3">
+        <Button size="sm" onClick={save} disabled={busy}>
+          {busy ? "Saving…" : "Save subscriptions"}
+        </Button>
+        {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+      </div>
+    </Card>
+  );
+}
+
+function StatsStrip({ base }: { base: string }) {
+  const [stats, setStats] = useState<EndpointStats | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    apiGet<EndpointStats>(`${base}/stats`)
+      .then((s) => {
+        if (active) setStats(s);
+      })
+      .catch(() => {}); // guarded: hide strip when unsupported
+    return () => {
+      active = false;
+    };
+  }, [base]);
+
+  if (!stats) return null;
+  const cells: Array<{ label: string; value: number; tone: string }> = [
+    { label: "Succeeded", value: stats.success, tone: "text-green-700" },
+    { label: "Pending", value: stats.pending, tone: "text-amber-700" },
+    { label: "Sending", value: stats.sending, tone: "text-blue-700" },
+    { label: "Failed", value: stats.fail, tone: "text-red-700" },
+  ];
+
+  return (
+    <Card className="p-0">
+      <dl className="grid grid-cols-4 divide-x divide-zinc-100">
+        {cells.map((c) => (
+          <div key={c.label} className="px-4 py-3 text-center">
+            <dt className="text-xs uppercase tracking-wide text-zinc-400">
+              {c.label}
+            </dt>
+            <dd className={`mt-0.5 text-lg font-semibold ${c.tone}`}>{c.value}</dd>
           </div>
-        ) : null}
-        {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
-        <div className="mt-3 flex items-center gap-3">
-          <Button type="submit" size="sm" disabled={busy}>
-            {busy ? "Saving…" : "Save subscriptions"}
-          </Button>
-          {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+        ))}
+      </dl>
+    </Card>
+  );
+}
+
+function RateLimitCard({
+  base,
+  endpoint,
+  onSaved,
+}: {
+  base: string;
+  endpoint: Endpoint;
+  onSaved: () => Promise<void> | void;
+}) {
+  const [rate, setRate] = useState(
+    endpoint.rateLimit ? String(endpoint.rateLimit) : "",
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await apiSend("PATCH", base, {
+        rateLimit: rate.trim() ? Number(rate) : null,
+      });
+      await onSaved();
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to save");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <CardHeading icon="activity" title="Rate limit" />
+      <p className="mt-1 text-sm text-zinc-500">
+        Cap delivery throughput to this endpoint. Leave blank for no limit.
+      </p>
+      <div className="mt-3 flex items-end gap-3">
+        <div className="w-48">
+          <Field label="Messages per second" htmlFor="rate-limit">
+            <Input
+              id="rate-limit"
+              type="number"
+              min={1}
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              placeholder="No limit"
+            />
+          </Field>
         </div>
-      </form>
+        <div className="pb-4">
+          <Button size="sm" onClick={save} disabled={busy}>
+            {busy ? "Saving…" : "Save"}
+          </Button>
+        </div>
+        {saved ? <span className="pb-5 text-xs text-green-600">Saved</span> : null}
+      </div>
+      {error ? <Alert>{error}</Alert> : null}
     </Card>
   );
 }
@@ -663,12 +767,110 @@ function TransformationCard({ base }: { base: string }) {
   );
 }
 
+export function AttemptRow({
+  attempt,
+  expanded,
+  onToggle,
+  onResend,
+  resending,
+  showEndpoint,
+}: {
+  attempt: MessageAttempt;
+  expanded: boolean;
+  onToggle: () => void;
+  onResend?: () => void;
+  resending?: boolean;
+  showEndpoint?: boolean;
+}) {
+  const s = attemptStatus(attempt.status);
+  return (
+    <li>
+      <div className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 items-center gap-2 text-left"
+        >
+          <Icon
+            name="chevronRight"
+            size={12}
+            className={cn(
+              "text-zinc-400 transition-transform",
+              expanded && "rotate-90",
+            )}
+          />
+          <Badge tone={s.tone}>{s.label}</Badge>
+          <span className="font-mono text-xs text-zinc-500">
+            {attempt.responseStatusCode || "—"}
+          </span>
+          {showEndpoint ? (
+            <span className="truncate font-mono text-xs text-zinc-400">
+              {attempt.url}
+            </span>
+          ) : null}
+        </button>
+        <span className="flex shrink-0 items-center gap-3">
+          <span className="text-xs text-zinc-400">
+            {formatDateTime(attempt.timestamp)}
+          </span>
+          {onResend ? (
+            <Button variant="ghost" size="sm" onClick={onResend} disabled={resending}>
+              {resending ? "…" : "Resend"}
+            </Button>
+          ) : null}
+        </span>
+      </div>
+      {expanded ? (
+        <div className="border-t border-zinc-100 bg-zinc-50/60 px-4 py-3">
+          <dl className="grid grid-cols-3 gap-3 text-xs">
+            <AttemptMeta
+              label="Status code"
+              value={String(attempt.responseStatusCode || "—")}
+            />
+            <AttemptMeta
+              label="Duration"
+              value={
+                attempt.responseDurationMs != null
+                  ? `${attempt.responseDurationMs} ms`
+                  : "—"
+              }
+            />
+            <AttemptMeta
+              label="Trigger"
+              value={attempt.triggerType === 1 ? "Manual" : "Scheduled"}
+            />
+          </dl>
+          <p className="mt-3 text-xs uppercase tracking-wide text-zinc-400">
+            Response body
+          </p>
+          <pre className="mt-1 max-h-48 overflow-auto rounded-md bg-white p-3 font-mono text-xs text-zinc-800 ring-1 ring-zinc-200">
+            {attempt.response || "(empty)"}
+          </pre>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+function AttemptMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="uppercase tracking-wide text-zinc-400">{label}</dt>
+      <dd className="mt-0.5 font-mono text-zinc-700">{value}</dd>
+    </div>
+  );
+}
+
 function DeliveriesCard({ base }: { base: string }) {
-  const attempts = usePaginatedList<MessageAttempt>(`${base}/attempts`, 15);
+  const attempts = usePaginatedList<MessageAttempt>(
+    `${base}/attempts?with_content=true`,
+    15,
+  );
   const [recovering, setRecovering] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function resend(attemptId: string, msgId: string) {
     setResendingId(attemptId);
@@ -718,30 +920,16 @@ function DeliveriesCard({ base }: { base: string }) {
           <p className="p-4 text-sm text-zinc-500">No deliveries yet.</p>
         ) : (
           <ul className="divide-y divide-zinc-100">
-            {attempts.items.map((a) => {
-              const s = attemptStatus(a.status);
-              return (
-                <li key={a.id} className="flex items-center justify-between px-4 py-2 text-sm">
-                  <span className="flex items-center gap-2">
-                    <Badge tone={s.tone}>{s.label}</Badge>
-                    <span className="font-mono text-xs text-zinc-500">
-                      {a.responseStatusCode || "—"}
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <span className="text-xs text-zinc-400">{formatDateTime(a.timestamp)}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => resend(a.id, a.msgId)}
-                      disabled={resendingId === a.id}
-                    >
-                      {resendingId === a.id ? "…" : "Resend"}
-                    </Button>
-                  </span>
-                </li>
-              );
-            })}
+            {attempts.items.map((a) => (
+              <AttemptRow
+                key={a.id}
+                attempt={a}
+                expanded={expanded === a.id}
+                onToggle={() => setExpanded(expanded === a.id ? null : a.id)}
+                onResend={() => resend(a.id, a.msgId)}
+                resending={resendingId === a.id}
+              />
+            ))}
           </ul>
         )}
       </div>
