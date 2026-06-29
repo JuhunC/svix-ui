@@ -45,3 +45,6 @@ next-env.d.ts
 site/_site/
 site/.jekyll-cache/
 site/.sass-cache/
+
+# Playwright MCP scratch output
+.playwright-mcp/

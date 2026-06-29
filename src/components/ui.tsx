@@ -17,11 +17,11 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1";
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1";
   const sizes = { sm: "h-8 px-3 text-sm", md: "h-9 px-4 text-sm" };
   const variants = {
-    primary: "bg-indigo-600 text-white shadow-sm hover:bg-indigo-500",
-    secondary: "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50",
+    primary: "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800",
+    secondary: "border border-zinc-200 bg-white text-zinc-900 shadow-sm hover:bg-zinc-50",
     danger: "bg-red-600 text-white shadow-sm hover:bg-red-500",
     ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
   };
@@ -238,7 +238,7 @@ export function Tabs({
             className={cn(
               "whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors",
               active === t.key
-                ? "border-indigo-600 text-zinc-900"
+                ? "border-blue-600 text-zinc-900"
                 : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
             )}
           >
@@ -254,7 +254,7 @@ export function Spinner({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-indigo-600",
+        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-blue-600",
         className,
       )}
       role="status"

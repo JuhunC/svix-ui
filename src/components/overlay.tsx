@@ -84,7 +84,7 @@ export function ChipInput({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2 py-1.5 focus-within:ring-2 focus-within:ring-blue-500">
       {values.map((v) => (
         <span
           key={v}

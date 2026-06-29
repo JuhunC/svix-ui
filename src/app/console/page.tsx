@@ -32,9 +32,9 @@ export default function ConsoleOverviewPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {CARDS.map((c) => (
           <Link key={c.href} href={c.href} className="group">
-            <Card className="h-full p-5 transition-colors group-hover:border-indigo-300">
+            <Card className="h-full p-5 transition-colors group-hover:border-blue-300">
               <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                   <Icon name={c.icon} size={18} />
                 </span>
                 <h2 className="text-base font-semibold text-zinc-900">

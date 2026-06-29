@@ -37,10 +37,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-16">
+    <main className="flex flex-1 items-center justify-center bg-canvas px-4 py-16">
       <Card className="w-full max-w-sm p-7">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+          <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
             <Icon name="endpoints" size={22} />
           </span>
           <h1 className="text-lg font-semibold text-zinc-900">svix-ui</h1>
