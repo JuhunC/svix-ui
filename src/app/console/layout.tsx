@@ -3,6 +3,7 @@ import { getOperatorSession } from "@/lib/auth/server";
 import { LogoutButton } from "@/components/logout-button";
 import { Brand, DashboardShell, type NavItem } from "@/components/dashboard-shell";
 import { Icon } from "@/components/icons";
+import { getAppVersion } from "@/lib/version";
 
 // Auth is evaluated per request; never prerender the console.
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function ConsoleLayout({
     <DashboardShell
       brand={<Brand subtitle="Operator console" />}
       nav={NAV}
+      version={getAppVersion().label}
       headerRight={
         <a
           href="https://github.com/JuhunC/svix-ui"

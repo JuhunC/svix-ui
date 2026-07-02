@@ -1,11 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Card, Input } from "@/components/ui";
+import { Alert, Button, Card, Input, cn } from "@/components/ui";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
 import { copyToClipboard } from "@/lib/clipboard";
 
-export function PortalLinkButton({ appId }: { appId: string }) {
+/**
+ * Generates a consumer App Portal magic link for an application. When `to` is
+ * set (a portal path such as `/portal/endpoints/ep_123`), the launch link deep
+ * links the customer straight to that page — e.g. a single endpoint's settings.
+ */
+export function PortalLinkButton({
+  appId,
+  to,
+  title = "Consumer App Portal",
+  description = "Generate a magic link your customer opens to self-serve their endpoints, secret, subscriptions, and replays.",
+  buttonLabel = "Create portal link",
+  className,
+}: {
+  appId: string;
+  to?: string;
+  title?: string;
+  description?: string;
+  buttonLabel?: string;
+  className?: string;
+}) {
   const [link, setLink] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +39,9 @@ export function PortalLinkButton({ appId }: { appId: string }) {
         token: string;
         app: string;
         exp: number;
+        to: string | null;
         link: string | null;
-      }>("POST", `/api/admin/apps/${encodeURIComponent(appId)}/portal-link`, {});
+      }>("POST", `/api/admin/apps/${encodeURIComponent(appId)}/portal-link`, to ? { to } : {});
       // Prefer a server-built link (set only when SVIX_UI_PUBLIC_URL is
       // configured); otherwise build it from this browser's origin, which is
       // the host the operator — and the customer — actually use.
@@ -29,8 +49,9 @@ export function PortalLinkButton({ appId }: { appId: string }) {
         token: res.token,
         app: res.app,
         exp: String(res.exp),
-      }).toString();
-      setLink(res.link ?? `${window.location.origin}/portal/launch?${query}`);
+      });
+      if (res.to) query.set("to", res.to);
+      setLink(res.link ?? `${window.location.origin}/portal/launch?${query.toString()}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to create link");
     } finally {
@@ -46,17 +67,14 @@ export function PortalLinkButton({ appId }: { appId: string }) {
   }
 
   return (
-    <Card className="mt-6 p-5">
-      <div className="flex items-center justify-between">
+    <Card className={cn("p-5", className)}>
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-zinc-900">Consumer App Portal</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Generate a magic link your customer opens to self-serve their
-            endpoints, secret, subscriptions, and replays.
-          </p>
+          <h2 className="text-base font-semibold text-zinc-900">{title}</h2>
+          <p className="mt-1 text-sm text-zinc-500">{description}</p>
         </div>
         <Button size="sm" onClick={generate} disabled={busy}>
-          {busy ? "Creating…" : "Create portal link"}
+          {busy ? "Creating…" : buttonLabel}
         </Button>
       </div>
 

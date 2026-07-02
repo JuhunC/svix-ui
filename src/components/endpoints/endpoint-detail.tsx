@@ -27,6 +27,7 @@ import {
   EventTypePicker,
   catalogPathFor,
 } from "@/components/endpoints/event-type-picker";
+import { PortalLinkButton } from "@/components/applications/portal-link-button";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import { formatDateTime } from "@/lib/format";
@@ -59,6 +60,13 @@ export function EndpointDetail({
   const router = useRouter();
   const base = apiBase;
   const isPortal = apiBase.startsWith("/api/portal");
+  // In the console the base is /api/admin/apps/{appId}/endpoints/{endpointId};
+  // pull the ids out to offer a per-endpoint consumer portal link.
+  const adminMatch = base.match(
+    /^\/api\/admin\/apps\/([^/]+)\/endpoints\/([^/]+)$/,
+  );
+  const consoleAppId = adminMatch ? decodeURIComponent(adminMatch[1]) : null;
+  const consoleEndpointId = adminMatch ? decodeURIComponent(adminMatch[2]) : null;
   const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -186,6 +194,15 @@ export function EndpointDetail({
             <RateLimitCard base={base} endpoint={endpoint} onSaved={reload} />
             <HeadersCard base={base} />
             <TransformationCard base={base} />
+            {consoleAppId && consoleEndpointId ? (
+              <PortalLinkButton
+                appId={consoleAppId}
+                to={`/portal/endpoints/${encodeURIComponent(consoleEndpointId)}`}
+                title="Consumer portal link"
+                description="Share a magic link that opens this endpoint's settings in the App Portal for your customer."
+                buttonLabel="Create link"
+              />
+            ) : null}
           </>
         ) : null}
 

@@ -40,12 +40,14 @@ export function DashboardShell({
   nav,
   footer,
   headerRight,
+  version,
   children,
 }: {
   brand: ReactNode;
   nav: NavItem[];
   footer?: ReactNode;
   headerRight?: ReactNode;
+  version?: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -81,6 +83,11 @@ export function DashboardShell({
         </nav>
         {footer ? (
           <div className="border-t border-zinc-200 p-3">{footer}</div>
+        ) : null}
+        {version ? (
+          <div className="border-t border-zinc-200 px-4 py-2">
+            <span className="font-mono text-[11px] text-zinc-400">{version}</span>
+          </div>
         ) : null}
       </aside>
 

@@ -37,4 +37,26 @@ describe("GET /portal/launch", () => {
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("/portal/expired");
   });
+
+  it("deep-links to a safe portal target via `to`", async () => {
+    applyAdminEnv();
+    const res = await GET(
+      new NextRequest(
+        "http://0.0.0.0:3000/portal/launch?token=sk&app=app_9&exp=3600&to=%2Fportal%2Fendpoints%2Fep_1",
+      ),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("/portal/endpoints/ep_1");
+  });
+
+  it("ignores an unsafe `to` (open-redirect guard)", async () => {
+    applyAdminEnv();
+    const res = await GET(
+      new NextRequest(
+        "http://0.0.0.0:3000/portal/launch?token=sk&app=app_9&exp=3600&to=%2F%2Fevil.com",
+      ),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("/portal");
+  });
 });

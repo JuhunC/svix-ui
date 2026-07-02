@@ -17,10 +17,13 @@ RUN npm run build
 # --- runtime ----------------------------------------------------------------
 FROM node:22-alpine AS runner
 WORKDIR /app
+# Build commit, surfaced in the dashboard. CI passes --build-arg GIT_SHA=<sha>.
+ARG GIT_SHA=""
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV SVIX_UI_GIT_SHA=$GIT_SHA
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 

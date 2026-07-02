@@ -63,6 +63,52 @@ describe("POST /api/admin/apps/[appId]/portal-link", () => {
     delete process.env.SVIX_UI_PUBLIC_URL;
   });
 
+  it("embeds a safe `to` deep-link target in the launch link", async () => {
+    applyAdminEnv();
+    process.env.SVIX_UI_PUBLIC_URL = "https://hooks.example.com";
+    auth.token = validOperatorToken();
+    svixServer.use(
+      http.post(`${BASE}/api/v1/auth/app-portal-access/app_1`, () =>
+        HttpResponse.json({ url: "x", token: "sk_portal" }),
+      ),
+    );
+    const res = await POST(
+      new NextRequest("http://localhost/api/admin/apps/app_1/portal-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: "/portal/endpoints/ep_1" }),
+      }),
+      { params: Promise.resolve({ appId: "app_1" }) },
+    );
+    const body = (await res.json()) as { link: string; to: string | null };
+    expect(body.to).toBe("/portal/endpoints/ep_1");
+    expect(new URL(body.link).searchParams.get("to")).toBe("/portal/endpoints/ep_1");
+    delete process.env.SVIX_UI_PUBLIC_URL;
+  });
+
+  it("rejects an unsafe `to` (open-redirect guard)", async () => {
+    applyAdminEnv();
+    process.env.SVIX_UI_PUBLIC_URL = "https://hooks.example.com";
+    auth.token = validOperatorToken();
+    svixServer.use(
+      http.post(`${BASE}/api/v1/auth/app-portal-access/app_1`, () =>
+        HttpResponse.json({ url: "x", token: "sk_portal" }),
+      ),
+    );
+    const res = await POST(
+      new NextRequest("http://localhost/api/admin/apps/app_1/portal-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: "//evil.com" }),
+      }),
+      { params: Promise.resolve({ appId: "app_1" }) },
+    );
+    const body = (await res.json()) as { link: string; to: string | null };
+    expect(body.to).toBeNull();
+    expect(new URL(body.link).searchParams.get("to")).toBeNull();
+    delete process.env.SVIX_UI_PUBLIC_URL;
+  });
+
   it("returns a null link (client builds it) when no public URL is set", async () => {
     applyAdminEnv();
     delete process.env.SVIX_UI_PUBLIC_URL;

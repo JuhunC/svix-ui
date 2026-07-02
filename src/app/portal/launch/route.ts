@@ -18,8 +18,20 @@ function redirectTo(path: string): NextResponse {
 }
 
 /**
+ * Restricts the post-launch deep-link target to a same-origin path inside the
+ * portal (e.g. `/portal/endpoints/ep_123`). Guards against open redirects — a
+ * value like `//evil.com` fails the `/portal/` prefix check. Falls back to the
+ * portal root when absent or unsafe.
+ */
+function safePortalTarget(raw: string | null): string {
+  if (raw && /^\/portal\/[A-Za-z0-9/_%.-]*$/.test(raw)) return raw;
+  return "/portal";
+}
+
+/**
  * Consumer magic-link entry point. Moves the app-scoped token out of the URL
- * into a sealed httpOnly cookie, then redirects to the portal.
+ * into a sealed httpOnly cookie, then redirects to the portal (optionally deep
+ * linking to a specific endpoint via `to`).
  */
 export async function GET(req: NextRequest) {
   let secret: string;
@@ -45,7 +57,8 @@ export async function GET(req: NextRequest) {
     { token, appId, exp: Date.now() + ttl * 1000 },
     secret,
   );
-  const res = redirectTo("/portal");
+  const target = safePortalTarget(req.nextUrl.searchParams.get("to"));
+  const res = redirectTo(target);
   res.cookies.set(PORTAL_COOKIE, sealed, portalCookieOptions(ttl, isRequestSecure(req)));
   return res;
 }
