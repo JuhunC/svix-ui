@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Alert, Button, Card, Field, Input, Textarea } from "@/components/ui";
+import { Icon } from "@/components/icons";
+import { SendEventModal } from "@/components/event-types/send-event-modal";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
+import { exampleFromSchema } from "@/lib/svix/schema-example";
 import type { EventType } from "@/lib/svix/types";
 
 export function EventTypeDetail({ name }: { name: string }) {
@@ -20,6 +23,18 @@ export function EventTypeDetail({ name }: { name: string }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // Seed the "Send event" payload from the current (possibly edited) schema.
+  const examplePayload = useMemo(() => {
+    if (!schema.trim()) return "{}";
+    try {
+      const example = exampleFromSchema(JSON.parse(schema));
+      return JSON.stringify(example ?? {}, null, 2);
+    } catch {
+      return "{}";
+    }
+  }, [schema]);
 
   const load = useCallback(async () => {
     try {
@@ -96,12 +111,26 @@ export function EventTypeDetail({ name }: { name: string }) {
       <Link href="/console/event-types" className="text-sm text-zinc-500 hover:text-zinc-900">
         ← Event types
       </Link>
-      <div className="mt-2 flex items-start justify-between">
+      <div className="mt-2 flex items-start justify-between gap-3">
         <h1 className="font-mono text-lg text-zinc-900">{name}</h1>
-        <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
-          Delete permanently
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button size="sm" onClick={() => setSending(true)}>
+            <Icon name="send" size={15} /> Send event
+          </Button>
+          <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
+            Delete permanently
+          </Button>
+        </div>
       </div>
+
+      {sending ? (
+        <SendEventModal
+          open
+          eventType={name}
+          initialPayload={examplePayload}
+          onClose={() => setSending(false)}
+        />
+      ) : null}
 
       <Card className="mt-6 p-5">
         <form onSubmit={save}>
