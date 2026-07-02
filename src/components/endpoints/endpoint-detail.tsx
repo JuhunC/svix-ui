@@ -140,9 +140,12 @@ export function EndpointDetail({
           <Button variant="secondary" size="sm" onClick={toggleDisabled} disabled={busy}>
             {endpoint.disabled ? "Enable" : "Disable"}
           </Button>
-          <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
-            <Icon name="trash" size={15} /> Delete
-          </Button>
+          {/* Consumers may change settings but not delete the endpoint itself. */}
+          {!isPortal ? (
+            <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
+              <Icon name="trash" size={15} /> Delete
+            </Button>
+          ) : null}
         </div>
       </div>
 

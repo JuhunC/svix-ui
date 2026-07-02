@@ -31,6 +31,10 @@ export function EndpointsSection({
   heading?: string;
 }) {
   const base = apiBase;
+  // Consumers reaching this through the App Portal may edit endpoint settings
+  // but not add or delete endpoints — only the operator console (admin API)
+  // can create them. Gate the "Add endpoint" affordances accordingly.
+  const canManage = !base.startsWith("/api/portal");
   const { items, done, loading, error, loadMore, reload } =
     usePaginatedList<Endpoint>(base);
   const [adding, setAdding] = useState(false);
@@ -39,21 +43,25 @@ export function EndpointsSection({
     <section className="mt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-zinc-900">{heading}</h2>
-        <Button size="sm" onClick={() => setAdding(true)}>
-          <Icon name="plus" size={15} /> Add endpoint
-        </Button>
+        {canManage ? (
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Icon name="plus" size={15} /> Add endpoint
+          </Button>
+        ) : null}
       </div>
 
-      <AddEndpointModal
-        open={adding}
-        base={base}
-        catalogPath={catalogPathFor(base)}
-        onClose={() => setAdding(false)}
-        onCreated={() => {
-          setAdding(false);
-          reload();
-        }}
-      />
+      {canManage ? (
+        <AddEndpointModal
+          open={adding}
+          base={base}
+          catalogPath={catalogPathFor(base)}
+          onClose={() => setAdding(false)}
+          onCreated={() => {
+            setAdding(false);
+            reload();
+          }}
+        />
+      ) : null}
 
       {error ? (
         <div className="mt-3">
@@ -67,11 +75,17 @@ export function EndpointsSection({
             <EmptyState
               icon={<Icon name="endpoints" />}
               title="No endpoints"
-              description="Add an endpoint URL to start receiving webhooks."
+              description={
+                canManage
+                  ? "Add an endpoint URL to start receiving webhooks."
+                  : "No endpoints yet. Your provider adds endpoints for this application."
+              }
               action={
-                <Button size="sm" onClick={() => setAdding(true)}>
-                  <Icon name="plus" size={15} /> Add endpoint
-                </Button>
+                canManage ? (
+                  <Button size="sm" onClick={() => setAdding(true)}>
+                    <Icon name="plus" size={15} /> Add endpoint
+                  </Button>
+                ) : undefined
               }
             />
           </div>

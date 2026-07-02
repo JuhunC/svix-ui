@@ -22,7 +22,6 @@ export const PATCH = withPortal<Params>(async ({ req, client, appId, params }) =
   return NextResponse.json(endpoint);
 });
 
-export const DELETE = withPortal<Params>(async ({ client, appId, params }) => {
-  await client.deleteEndpoint(appId, params.endpointId);
-  return new NextResponse(null, { status: 204 });
-});
+// Deleting an endpoint is intentionally not exposed to the App Portal — the
+// consumer may edit settings (PATCH) but not remove the endpoint itself. Only
+// the operator console (admin API) can delete. DELETE returns 405 here.

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert, Button, Card, Input } from "@/components/ui";
 import { ApiError, apiSend } from "@/lib/api/fetcher";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export function PortalLinkButton({ appId }: { appId: string }) {
   const [link, setLink] = useState<string | null>(null);
@@ -39,12 +40,9 @@ export function PortalLinkButton({ appId }: { appId: string }) {
 
   async function copy() {
     if (!link) return;
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-    } catch {
-      // Clipboard may be unavailable; the link is still selectable.
-    }
+    // Works over plain HTTP too (navigator.clipboard is unavailable there).
+    const ok = await copyToClipboard(link);
+    setCopied(ok);
   }
 
   return (

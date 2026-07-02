@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, PageHeader } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
+import { AdminTokenCard } from "@/components/admin/admin-token-card";
 
 const CARDS: Array<{
   href: string;
@@ -46,6 +47,8 @@ export default function ConsoleOverviewPage() {
           </Link>
         ))}
       </div>
+
+      <AdminTokenCard />
     </div>
   );
 }

@@ -20,7 +20,9 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { GET, POST } from "./route";
+import * as route from "./route";
+
+const { GET } = route;
 
 const BASE = ADMIN_ENV.SVIX_SERVER_URL;
 
@@ -65,25 +67,9 @@ describe("portal endpoints", () => {
     expect(sentAuth).toBe("Bearer sk_app_scoped");
   });
 
-  it("creates an endpoint scoped to the session app", async () => {
-    applyAdminEnv();
-    cookieState.value = portalCookie("sk_app_scoped", "app_42");
-    svixServer.use(
-      http.post(`${BASE}/api/v1/app/app_42/endpoint`, async ({ request }) => {
-        const body = (await request.json()) as { url: string };
-        return HttpResponse.json(
-          { id: "ep_new", url: body.url, createdAt: "", updatedAt: "" },
-          { status: 201 },
-        );
-      }),
-    );
-    const res = await POST(
-      req("/api/portal/endpoints", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: "https://example.com/hook" }),
-      }),
-    );
-    expect(res.status).toBe(201);
+  it("does not expose endpoint creation (portal is read/modify-only)", () => {
+    // POST is intentionally absent so consumers cannot add endpoints; Next.js
+    // responds 405 to the unhandled method.
+    expect((route as Record<string, unknown>).POST).toBeUndefined();
   });
 });
