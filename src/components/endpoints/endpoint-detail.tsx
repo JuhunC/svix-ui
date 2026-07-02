@@ -177,6 +177,15 @@ export function EndpointDetail({
             </Card>
             <SecretCard base={base} />
             <SubscriptionsCard base={base} endpoint={endpoint} onSaved={reload} />
+            {consoleAppId && consoleEndpointId ? (
+              <PortalLinkButton
+                appId={consoleAppId}
+                to={`/portal/endpoints/${encodeURIComponent(consoleEndpointId)}`}
+                title="Consumer portal link"
+                description="Share a magic link that opens this endpoint's settings in the App Portal for your customer."
+                buttonLabel="Create link"
+              />
+            ) : null}
           </>
         ) : null}
 
@@ -194,15 +203,6 @@ export function EndpointDetail({
             <RateLimitCard base={base} endpoint={endpoint} onSaved={reload} />
             <HeadersCard base={base} />
             <TransformationCard base={base} />
-            {consoleAppId && consoleEndpointId ? (
-              <PortalLinkButton
-                appId={consoleAppId}
-                to={`/portal/endpoints/${encodeURIComponent(consoleEndpointId)}`}
-                title="Consumer portal link"
-                description="Share a magic link that opens this endpoint's settings in the App Portal for your customer."
-                buttonLabel="Create link"
-              />
-            ) : null}
           </>
         ) : null}
 
