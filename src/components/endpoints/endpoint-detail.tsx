@@ -158,7 +158,12 @@ export function EndpointDetail({
       </div>
 
       <div className="mt-6">
-        <Tabs tabs={TABS} active={tab} onChange={setTab} />
+        {/* The portal can't send test events, so drop that dead-end tab there. */}
+        <Tabs
+          tabs={isPortal ? TABS.filter((t) => t.key !== "testing") : TABS}
+          active={tab}
+          onChange={setTab}
+        />
       </div>
 
       <div className="mt-6 space-y-4">
@@ -596,6 +601,11 @@ function HeadersCard({ base }: { base: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Distinguish "loaded, none configured" from "couldn't load": saving with an
+  // unread config would PATCH over the existing headers. Block Save until a
+  // successful load (a 404 = unsupported/none, which is a safe empty state).
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -603,8 +613,13 @@ function HeadersCard({ base }: { base: string }) {
       .then((res) => {
         if (!active) return;
         setRows(Object.entries(res.headers ?? {}).map(([key, value]) => ({ key, value })));
+        setLoaded(true);
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (!active) return;
+        if (e instanceof ApiError && e.status === 404) setLoaded(true);
+        else setLoadError(e instanceof ApiError ? e.message : "Failed to load headers");
+      });
     return () => {
       active = false;
     };
@@ -661,16 +676,25 @@ function HeadersCard({ base }: { base: string }) {
           </div>
         ))}
       </div>
+      {loadError ? (
+        <div className="mt-3">
+          <Alert>
+            Couldn&apos;t load the current headers ({loadError}). Editing is
+            disabled so a save can&apos;t overwrite them — reload to try again.
+          </Alert>
+        </div>
+      ) : null}
       {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
       <div className="mt-3 flex items-center gap-3">
         <Button
           variant="secondary"
           size="sm"
+          disabled={!loaded}
           onClick={() => setRows((r) => [...r, { key: "", value: "" }])}
         >
           Add header
         </Button>
-        <Button size="sm" onClick={save} disabled={busy}>
+        <Button size="sm" onClick={save} disabled={busy || !loaded}>
           {busy ? "Saving…" : "Save headers"}
         </Button>
         {saved ? <span className="text-xs text-green-600">Saved</span> : null}
@@ -693,6 +717,8 @@ function TransformationCard({ base }: { base: string }) {
   const [saved, setSaved] = useState(false);
   // null = loading, true = server supports it, false = not on this svix-server.
   const [supported, setSupported] = useState<boolean | null>(null);
+  // Non-404 load failure: don't let a save overwrite an unread transformation.
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -706,7 +732,12 @@ function TransformationCard({ base }: { base: string }) {
       .catch((e) => {
         if (!active) return;
         // svix-server builds without transformations return 404 for this route.
-        setSupported(!(e instanceof ApiError && e.status === 404));
+        if (e instanceof ApiError && e.status === 404) {
+          setSupported(false);
+        } else {
+          setSupported(true);
+          setLoadError(e instanceof ApiError ? e.message : "Failed to load transformation");
+        }
       });
     return () => {
       active = false;
@@ -767,18 +798,27 @@ function TransformationCard({ base }: { base: string }) {
           spellCheck={false}
         />
       </div>
+      {loadError ? (
+        <div className="mt-3">
+          <Alert>
+            Couldn&apos;t load the current transformation ({loadError}). Editing
+            is disabled so a save can&apos;t overwrite it — reload to try again.
+          </Alert>
+        </div>
+      ) : null}
       {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
       <div className="mt-3 flex items-center gap-3">
         {code.trim().length === 0 ? (
           <Button
             variant="secondary"
             size="sm"
+            disabled={Boolean(loadError)}
             onClick={() => setCode(TRANSFORM_TEMPLATE)}
           >
             Insert template
           </Button>
         ) : null}
-        <Button size="sm" onClick={save} disabled={busy}>
+        <Button size="sm" onClick={save} disabled={busy || Boolean(loadError)}>
           {busy ? "Saving…" : "Save transformation"}
         </Button>
         {saved ? <span className="text-xs text-green-600">Saved</span> : null}

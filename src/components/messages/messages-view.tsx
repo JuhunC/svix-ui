@@ -65,7 +65,8 @@ export function MessagesView({ appId }: { appId: string }) {
             />
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
               <tr>
                 <th className="px-4 py-2 font-medium">Event type</th>
@@ -92,6 +93,7 @@ export function MessagesView({ appId }: { appId: string }) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

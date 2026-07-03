@@ -153,8 +153,14 @@ export function Alert({
     info: "border-blue-200 bg-blue-50 text-blue-800",
     success: "border-green-200 bg-green-50 text-green-800",
   };
+  // Announce to assistive tech: errors assertively, info/success politely.
+  const live = tone === "danger" ? "assertive" : "polite";
   return (
-    <div className={cn("rounded-md border px-3 py-2 text-sm", tones[tone])}>
+    <div
+      role={tone === "danger" ? "alert" : "status"}
+      aria-live={live}
+      className={cn("rounded-md border px-3 py-2 text-sm", tones[tone])}
+    >
       {children}
     </div>
   );

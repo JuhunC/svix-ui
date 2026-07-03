@@ -47,15 +47,22 @@ export function MessageDetailView({
   );
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
 
   async function resend(endpointId: string) {
     setResendingId(endpointId);
+    setResendError(null);
+    setResent(false);
     try {
       await apiSend(
         "POST",
         resendTemplate.replace("{endpointId}", encodeURIComponent(endpointId)),
       );
+      setResent(true);
       attempts.reload();
+    } catch (e) {
+      setResendError(e instanceof ApiError ? e.message : "Failed to resend");
     } finally {
       setResendingId(null);
     }
@@ -103,6 +110,12 @@ export function MessageDetailView({
 
       <section className="mt-6">
         <h2 className="text-base font-semibold text-zinc-900">Delivery attempts</h2>
+        {resendError ? (
+          <div className="mt-3"><Alert>{resendError}</Alert></div>
+        ) : null}
+        {resent ? (
+          <div className="mt-3"><Alert tone="success">Resend queued.</Alert></div>
+        ) : null}
         {attempts.error ? (
           <div className="mt-3"><Alert>{attempts.error}</Alert></div>
         ) : null}
