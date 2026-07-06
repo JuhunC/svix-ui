@@ -111,7 +111,11 @@ function CatalogRow({ eventType }: { eventType: EventType }) {
               Schema
             </Button>
           </div>
-        ) : null}
+        ) : (
+          <span className="shrink-0 self-center text-xs text-zinc-400">
+            No schema published
+          </span>
+        )}
       </div>
       {view !== "none" && schema ? (
         <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-zinc-50 p-3 font-mono text-xs text-zinc-800 ring-1 ring-zinc-200">
