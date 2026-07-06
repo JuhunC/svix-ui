@@ -31,14 +31,20 @@ export function ActivityFeed({
   detailHref,
   title = "Activity",
   description = "Events sent to this application and how each delivery went.",
+  lockedEventType,
+  embedded = false,
 }: {
   messagesPath: string;
   catalogPath: string;
   detailHref: (msgId: string) => string;
   title?: string;
   description?: string;
+  /** Pin the feed to a single event type and hide its event-type filter. */
+  lockedEventType?: string;
+  /** Render compactly (no PageHeader) for embedding inside another page. */
+  embedded?: boolean;
 }) {
-  const [eventType, setEventType] = useState("");
+  const [eventType, setEventType] = useState(lockedEventType ?? "");
   const [channel, setChannel] = useState("");
   const [range, setRange] = useState("");
   const [afterIso, setAfterIso] = useState("");
@@ -79,24 +85,26 @@ export function ActivityFeed({
 
   return (
     <div>
-      <PageHeader title={title} description={description} />
+      {!embedded ? <PageHeader title={title} description={description} /> : null}
 
       <Card className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Filter label="Event type">
-            <select
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm text-zinc-900"
-            >
-              <option value="">All</option>
-              {types.map((t) => (
-                <option key={t.name} value={t.name}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </Filter>
+          {!lockedEventType ? (
+            <Filter label="Event type">
+              <select
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+                className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm text-zinc-900"
+              >
+                <option value="">All</option>
+                {types.map((t) => (
+                  <option key={t.name} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </Filter>
+          ) : null}
           <Filter label="Channel">
             <input
               value={channel}
@@ -118,12 +126,12 @@ export function ActivityFeed({
               ))}
             </select>
           </Filter>
-          {eventType || channel || range ? (
+          {(!lockedEventType && eventType) || channel || range ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                setEventType("");
+                if (!lockedEventType) setEventType("");
                 setChannel("");
                 selectRange("");
               }}

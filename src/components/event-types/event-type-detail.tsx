@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { Alert, Button, Card, Field, Input, Textarea } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { SendEventModal } from "@/components/event-types/send-event-modal";
+import { EventTypeDeliveries } from "@/components/event-types/event-type-deliveries";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import { exampleFromSchema } from "@/lib/svix/schema-example";
 import type { EventType } from "@/lib/svix/types";
@@ -182,6 +183,8 @@ export function EventTypeDetail({ name }: { name: string }) {
           </div>
         </form>
       </Card>
+
+      <EventTypeDeliveries eventType={name} />
     </div>
   );
 }

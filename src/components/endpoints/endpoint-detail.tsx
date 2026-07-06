@@ -38,6 +38,7 @@ import type {
   EndpointSecret,
   EndpointStats,
   EndpointTransformation,
+  Message,
   MessageAttempt,
 } from "@/lib/svix/types";
 
@@ -834,6 +835,7 @@ export function AttemptRow({
   onResend,
   resending,
   showEndpoint,
+  sentPayload,
 }: {
   attempt: MessageAttempt;
   expanded: boolean;
@@ -841,6 +843,9 @@ export function AttemptRow({
   onResend?: () => void;
   resending?: boolean;
   showEndpoint?: boolean;
+  /** The message body that was delivered. "loading"/null while fetching/failed;
+   *  undefined = don't show (e.g. already shown elsewhere on the page). */
+  sentPayload?: "loading" | Record<string, unknown> | null;
 }) {
   const s = attemptStatus(attempt.status);
   return (
@@ -900,6 +905,20 @@ export function AttemptRow({
               value={attempt.triggerType === 1 ? "Manual" : "Scheduled"}
             />
           </dl>
+          {sentPayload !== undefined ? (
+            <>
+              <p className="mt-3 text-xs uppercase tracking-wide text-zinc-400">
+                Sent payload
+              </p>
+              <pre className="mt-1 max-h-48 overflow-auto rounded-md bg-white p-3 font-mono text-xs text-zinc-800 ring-1 ring-zinc-200">
+                {sentPayload === "loading"
+                  ? "Loading…"
+                  : sentPayload === null
+                    ? "(payload unavailable — it may have expired)"
+                    : JSON.stringify(sentPayload, null, 2)}
+              </pre>
+            </>
+          ) : null}
           <p className="mt-3 text-xs uppercase tracking-wide text-zinc-400">
             Response body
           </p>
@@ -1044,6 +1063,23 @@ function DeliveriesCard({ base }: { base: string }) {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [recoverOpen, setRecoverOpen] = useState(false);
+  // The delivered payload lives on the Message, not the attempt — fetch it
+  // lazily (once per message) when a delivery row is expanded.
+  const [payloads, setPayloads] = useState<
+    Record<string, "loading" | Record<string, unknown> | null>
+  >({});
+  const messageBase = base.replace(/\/endpoints\/[^/]+$/, "");
+
+  function toggle(a: MessageAttempt) {
+    const next = expanded === a.id ? null : a.id;
+    setExpanded(next);
+    if (next && payloads[a.msgId] === undefined) {
+      setPayloads((p) => ({ ...p, [a.msgId]: "loading" }));
+      apiGet<Message>(`${messageBase}/messages/${encodeURIComponent(a.msgId)}`)
+        .then((m) => setPayloads((p) => ({ ...p, [a.msgId]: m.payload })))
+        .catch(() => setPayloads((p) => ({ ...p, [a.msgId]: null })));
+    }
+  }
 
   async function resend(attemptId: string, msgId: string) {
     setResendingId(attemptId);
@@ -1089,9 +1125,10 @@ function DeliveriesCard({ base }: { base: string }) {
                 key={a.id}
                 attempt={a}
                 expanded={expanded === a.id}
-                onToggle={() => setExpanded(expanded === a.id ? null : a.id)}
+                onToggle={() => toggle(a)}
                 onResend={() => resend(a.id, a.msgId)}
                 resending={resendingId === a.id}
+                sentPayload={payloads[a.msgId]}
               />
             ))}
           </ul>
