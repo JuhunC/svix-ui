@@ -11,6 +11,7 @@ const NAV: NavItem[] = [
   { href: "/portal/endpoints", label: "Endpoints", icon: "endpoints" },
   { href: "/portal/activity", label: "Activity", icon: "activity" },
   { href: "/portal/catalog", label: "Event catalog", icon: "catalog" },
+  { href: "/portal/guide", label: "Guide", icon: "guide" },
 ];
 
 async function hasValidPortalSession(): Promise<boolean> {
