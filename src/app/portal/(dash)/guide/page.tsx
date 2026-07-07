@@ -1,7 +1,12 @@
-import { PortalGuide } from "@/components/portal/portal-guide";
+import { WebhookGuide } from "@/components/guide/webhook-guide";
 
 export const dynamic = "force-dynamic";
 
 export default function PortalGuidePage() {
-  return <PortalGuide />;
+  return (
+    <WebhookGuide
+      eventTypesEndpoint="/api/portal/event-types?with_content=true&limit=250"
+      portalLinks
+    />
+  );
 }

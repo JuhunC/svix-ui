@@ -78,6 +78,13 @@ export default function LoginPage() {
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
+        <p className="mt-5 border-t border-zinc-100 pt-4 text-center text-sm text-zinc-500">
+          Integrating with these webhooks?{" "}
+          <a href="/guide" className="text-accent hover:underline">
+            Read the webhook guide
+          </a>
+          .
+        </p>
       </Card>
     </main>
   );
