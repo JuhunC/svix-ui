@@ -41,6 +41,13 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          # No provenance/SBOM attestation manifests: they add unknown/unknown
+          # entries to the image index, which break pulls through registry
+          # proxies (JFrog Artifactory remote repos, older Nexus/Harbor) with
+          # "could not fetch content descriptor ... not found". Disabling them
+          # also publishes plain Docker manifest-list media types.
+          provenance: false
+          sbom: false
           build-args: |
             GIT_SHA=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
