@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Alert, Button, Card, Field, Input, Spinner } from "@/components/ui";
-import { Icon } from "@/components/icons";
+import { BrandMark } from "@/components/dashboard-shell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,8 +40,8 @@ export default function LoginPage() {
     <main className="flex flex-1 items-center justify-center bg-canvas px-4 py-16">
       <Card className="w-full max-w-sm p-7">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
-            <Icon name="endpoints" size={22} />
+          <span className="mb-3">
+            <BrandMark size="lg" />
           </span>
           <h1 className="text-lg font-semibold text-zinc-900">svix-ui</h1>
           <p className="text-sm text-zinc-500">Sign in to the operator console</p>

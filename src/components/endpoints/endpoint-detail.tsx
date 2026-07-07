@@ -1,37 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   Alert,
+  BackLink,
   Badge,
   Button,
   Card,
+  CardHeading,
+  Detail,
   Field,
   Input,
+  SavedIndicator,
   Spinner,
   Tabs,
   Textarea,
   cn,
 } from "@/components/ui";
-import { Icon, type IconName } from "@/components/icons";
-import { ChipInput, Modal } from "@/components/overlay";
+import { Icon } from "@/components/icons";
+import { ChipInput, ConfirmDialog, Modal } from "@/components/overlay";
 import {
   EventTypePicker,
   catalogPathFor,
 } from "@/components/endpoints/event-type-picker";
 import { PortalLinkButton } from "@/components/applications/portal-link-button";
+import { CopyButton } from "@/components/copy-button";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import { formatDateTime } from "@/lib/format";
-import { attemptStatus } from "@/lib/svix/status";
+import { attemptStatus, httpCodeTone } from "@/lib/svix/status";
 import type {
   Endpoint,
   EndpointHeaders,
@@ -72,6 +70,7 @@ export function EndpointDetail({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [tab, setTab] = useState("overview");
 
   const reload = useCallback(async () => {
@@ -102,7 +101,6 @@ export function EndpointDetail({
   }
 
   async function remove() {
-    if (!confirm("Delete this endpoint? Delivery to this URL will stop.")) return;
     setBusy(true);
     try {
       await apiSend("DELETE", base);
@@ -110,6 +108,7 @@ export function EndpointDetail({
       router.refresh();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to delete");
+      setConfirmingDelete(false);
       setBusy(false);
     }
   }
@@ -126,21 +125,31 @@ export function EndpointDetail({
 
   return (
     <div>
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
-      >
-        <Icon name="chevronRight" size={14} className="rotate-180" /> Back
-      </Link>
+      <BackLink href={backHref}>Back</BackLink>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Delete endpoint"
+        body={
+          <>
+            Delete <span className="font-mono">{endpoint.url}</span>? Delivery to
+            this URL will stop immediately. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete endpoint"
+        busy={busy}
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={remove}
+      />
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate font-mono text-lg text-zinc-900">{endpoint.url}</h1>
           <div className="mt-1 flex items-center gap-2">
             {endpoint.disabled ? (
-              <Badge tone="danger">Disabled</Badge>
+              <Badge dot tone="danger">Disabled</Badge>
             ) : (
-              <Badge tone="success">Active</Badge>
+              <Badge dot tone="success">Active</Badge>
             )}
             <span className="font-mono text-xs text-zinc-400">{endpoint.id}</span>
           </div>
@@ -151,7 +160,12 @@ export function EndpointDetail({
           </Button>
           {/* Consumers may change settings but not delete the endpoint itself. */}
           {!isPortal ? (
-            <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={busy}
+            >
               <Icon name="trash" size={15} /> Delete
             </Button>
           ) : null}
@@ -218,39 +232,11 @@ export function EndpointDetail({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-zinc-400">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-zinc-800">{value}</dd>
-    </div>
-  );
-}
-
-function CardHeading({
-  icon,
-  title,
-  children,
-}: {
-  icon: IconName;
-  title: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900">
-        <Icon name={icon} size={17} className="text-zinc-400" />
-        {title}
-      </h2>
-      {children ? <div className="flex gap-2">{children}</div> : null}
-    </div>
-  );
-}
-
 function SecretCard({ base }: { base: string }) {
   const [secret, setSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmingRotate, setConfirmingRotate] = useState(false);
 
   async function reveal() {
     setBusy(true);
@@ -265,9 +251,6 @@ function SecretCard({ base }: { base: string }) {
   }
 
   async function rotate() {
-    if (!confirm("Rotate the signing secret? The old secret stays valid for 24h.")) {
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
@@ -276,26 +259,45 @@ function SecretCard({ base }: { base: string }) {
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to rotate secret");
     } finally {
+      setConfirmingRotate(false);
       setBusy(false);
     }
   }
 
   return (
     <Card className="p-5">
+      <ConfirmDialog
+        open={confirmingRotate}
+        title="Rotate signing secret"
+        body="Rotate this endpoint's signing secret? Your receiver must switch to the new secret — the old one stays valid for 24 hours."
+        confirmLabel="Rotate secret"
+        tone="primary"
+        busy={busy}
+        onCancel={() => setConfirmingRotate(false)}
+        onConfirm={rotate}
+      />
       <CardHeading icon="key" title="Signing secret">
         {secret === null ? (
           <Button variant="secondary" size="sm" onClick={reveal} disabled={busy}>
             Reveal
           </Button>
         ) : null}
-        <Button variant="secondary" size="sm" onClick={rotate} disabled={busy}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setConfirmingRotate(true)}
+          disabled={busy}
+        >
           Rotate
         </Button>
       </CardHeading>
       {error ? <div className="mt-3"><Alert>{error}</Alert></div> : null}
-      <p className="mt-3 break-all rounded-md bg-zinc-50 px-3 py-2 font-mono text-sm text-zinc-800">
-        {secret ?? "whsec_••••••••••••••••••••••••"}
-      </p>
+      <div className="mt-3 flex items-center gap-2 rounded-md bg-zinc-50 px-3 py-2">
+        <p className="min-w-0 flex-1 break-all font-mono text-sm text-zinc-800">
+          {secret ?? "whsec_••••••••••••••••••••••••"}
+        </p>
+        {secret ? <CopyButton value={secret} label="Copy secret" /> : null}
+      </div>
       <p className="mt-2 text-xs text-zinc-500">
         Verify with HMAC-SHA256 over <code>id.timestamp.body</code>; reject
         timestamps older than 5 minutes.
@@ -372,7 +374,7 @@ function SubscriptionsCard({
         <Button size="sm" onClick={save} disabled={busy}>
           {busy ? "Saving…" : "Save subscriptions"}
         </Button>
-        {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+        <SavedIndicator show={saved} />
       </div>
     </Card>
   );
@@ -474,7 +476,7 @@ function RateLimitCard({
             {busy ? "Saving…" : "Save"}
           </Button>
         </div>
-        {saved ? <span className="pb-5 text-xs text-green-600">Saved</span> : null}
+        <SavedIndicator show={saved} />
       </div>
       {error ? <Alert>{error}</Alert> : null}
     </Card>
@@ -698,7 +700,7 @@ function HeadersCard({ base }: { base: string }) {
         <Button size="sm" onClick={save} disabled={busy || !loaded}>
           {busy ? "Saving…" : "Save headers"}
         </Button>
-        {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+        <SavedIndicator show={saved} />
       </div>
     </Card>
   );
@@ -822,7 +824,7 @@ function TransformationCard({ base }: { base: string }) {
         <Button size="sm" onClick={save} disabled={busy || Boolean(loadError)}>
           {busy ? "Saving…" : "Save transformation"}
         </Button>
-        {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+        <SavedIndicator show={saved} />
       </div>
     </Card>
   );
@@ -864,8 +866,13 @@ export function AttemptRow({
               expanded && "rotate-90",
             )}
           />
-          <Badge tone={s.tone}>{s.label}</Badge>
-          <span className="font-mono text-xs text-zinc-500">
+          <Badge dot tone={s.tone}>{s.label}</Badge>
+          <span
+            className={cn(
+              "font-mono text-xs tabular-nums",
+              httpCodeTone(attempt.responseStatusCode),
+            )}
+          >
             {attempt.responseStatusCode || "—"}
           </span>
           {showEndpoint ? (
@@ -875,9 +882,13 @@ export function AttemptRow({
           ) : null}
         </button>
         <span className="flex shrink-0 items-center gap-3">
-          <span className="text-xs text-zinc-400">
+          <time
+            dateTime={attempt.timestamp}
+            title={formatDateTime(attempt.timestamp)}
+            className="text-xs text-zinc-400"
+          >
             {formatDateTime(attempt.timestamp)}
-          </span>
+          </time>
           {onResend ? (
             <Button variant="ghost" size="sm" onClick={onResend} disabled={resending}>
               {resending ? "…" : "Resend"}

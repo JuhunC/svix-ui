@@ -3,7 +3,7 @@ import { Icon } from "@/components/icons";
 
 export default function PortalExpiredPage() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-16">
+    <main className="flex flex-1 items-center justify-center bg-canvas px-4 py-16">
       <Card className="w-full max-w-sm p-8 text-center">
         <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
           <Icon name="link" size={20} />

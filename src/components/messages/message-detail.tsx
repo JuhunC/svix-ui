@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Button, Card, Spinner } from "@/components/ui";
-import { Icon } from "@/components/icons";
+import { Alert, BackLink, Button, Card, Spinner } from "@/components/ui";
 import { AttemptRow } from "@/components/endpoints/endpoint-detail";
+import { CopyButton } from "@/components/copy-button";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import { formatDateTime } from "@/lib/format";
@@ -70,12 +69,7 @@ export function MessageDetailView({
 
   return (
     <div>
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
-      >
-        <Icon name="chevronRight" size={14} className="rotate-180" /> Back
-      </Link>
+      <BackLink href={backHref}>Back</BackLink>
 
       {loadError ? <div className="mt-4"><Alert>{loadError}</Alert></div> : null}
 
@@ -83,10 +77,14 @@ export function MessageDetailView({
         <>
           <div className="mt-2">
             <h1 className="font-mono text-lg text-zinc-900">{message.eventType}</h1>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
               {message.eventId ? `${message.eventId} · ` : ""}
-              <span className="font-mono">{message.id}</span> ·{" "}
-              {formatDateTime(message.timestamp)}
+              <span className="font-mono">{message.id}</span>
+              <CopyButton value={message.id} label="Copy message ID" />
+              ·{" "}
+              <time dateTime={message.timestamp} title={message.timestamp}>
+                {formatDateTime(message.timestamp)}
+              </time>
             </p>
             {message.channels && message.channels.length > 0 ? (
               <p className="mt-1 text-xs text-zinc-400">
@@ -96,7 +94,13 @@ export function MessageDetailView({
           </div>
 
           <Card className="mt-6 p-5">
-            <h2 className="text-base font-semibold text-zinc-900">Payload</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-zinc-900">Payload</h2>
+              <CopyButton
+                value={JSON.stringify(message.payload, null, 2)}
+                label="Copy payload"
+              />
+            </div>
             <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-zinc-50 p-3 font-mono text-xs text-zinc-800">
               {JSON.stringify(message.payload, null, 2)}
             </pre>

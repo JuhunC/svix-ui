@@ -88,7 +88,11 @@ export function MessagesView({ appId }: { appId: string }) {
                   <td className="px-4 py-3 font-mono text-xs text-zinc-500">
                     {m.eventId ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{timeAgo(m.timestamp)}</td>
+                  <td className="px-4 py-3 text-zinc-500">
+                    <time dateTime={m.timestamp} title={new Date(m.timestamp).toLocaleString()}>
+                      {timeAgo(m.timestamp)}
+                    </time>
+                  </td>
                 </tr>
               ))}
             </tbody>

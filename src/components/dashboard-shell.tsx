@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { cn } from "@/components/ui";
+import { FOCUS_RING, cn } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
 
 export interface NavItem {
@@ -19,12 +19,24 @@ function matches(item: NavItem, pathname: string): boolean {
     : pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
+/** The one brand mark, reused at any size (sidebar, login, expired pages). */
+export function BrandMark({ size = "sm" }: { size?: "sm" | "lg" }) {
+  return (
+    <span
+      className={cn(
+        "flex items-center justify-center bg-accent text-white shadow-sm",
+        size === "lg" ? "h-11 w-11 rounded-xl" : "h-7 w-7 rounded-md",
+      )}
+    >
+      <Icon name="endpoints" size={size === "lg" ? 22 : 16} />
+    </span>
+  );
+}
+
 export function Brand({ subtitle }: { subtitle?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-white">
-        <Icon name="endpoints" size={16} />
-      </span>
+      <BrandMark />
       <span className="leading-tight">
         <span className="block text-sm font-semibold text-zinc-900">svix-ui</span>
         {subtitle ? (
@@ -55,26 +67,37 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-canvas">
+      <a
+        href="#main"
+        className={cn(
+          "sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:shadow",
+          FOCUS_RING,
+        )}
+      >
+        Skip to content
+      </a>
       <aside className="hidden w-64 shrink-0 flex-col border-r border-zinc-200 bg-white md:flex">
         <div className="flex h-14 items-center px-5">{brand}</div>
-        <nav className="flex-1 space-y-1 px-3 py-2">
+        <nav aria-label="Primary" className="flex-1 space-y-1 px-3 py-2">
           {nav.map((item) => {
             const on = matches(item, pathname);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={on ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  FOCUS_RING,
                   on
-                    ? "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200"
+                    ? "bg-accent-soft text-accent-hover ring-1 ring-inset ring-accent-ring"
                     : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
                 )}
               >
                 <Icon
                   name={item.icon}
                   size={18}
-                  className={on ? "text-blue-600" : "text-zinc-400"}
+                  className={on ? "text-accent" : "text-zinc-400"}
                 />
                 {item.label}
               </Link>
@@ -102,16 +125,21 @@ export function DashboardShell({
         </header>
 
         {/* Mobile nav */}
-        <nav className="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-white px-2 py-1 md:hidden">
+        <nav
+          aria-label="Primary (mobile)"
+          className="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-white px-2 py-1 md:hidden"
+        >
           {nav.map((item) => {
             const on = matches(item, pathname);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={on ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium",
-                  on ? "bg-blue-50 text-blue-700" : "text-zinc-600",
+                  FOCUS_RING,
+                  on ? "bg-accent-soft text-accent-hover" : "text-zinc-600",
                 )}
               >
                 <Icon name={item.icon} size={16} />
@@ -121,7 +149,7 @@ export function DashboardShell({
           })}
         </nav>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 lg:px-8">
+        <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 lg:px-8">
           {children}
         </main>
       </div>

@@ -9,6 +9,7 @@ import {
   Card,
   EmptyState,
   PageHeader,
+  Select,
   Spinner,
 } from "@/components/ui";
 import { Icon } from "@/components/icons";
@@ -91,10 +92,10 @@ export function ActivityFeed({
         <div className="flex flex-wrap items-center gap-3">
           {!lockedEventType ? (
             <Filter label="Event type">
-              <select
+              <Select
+                size="sm"
                 value={eventType}
                 onChange={(e) => setEventType(e.target.value)}
-                className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm text-zinc-900"
               >
                 <option value="">All</option>
                 {types.map((t) => (
@@ -102,7 +103,7 @@ export function ActivityFeed({
                     {t.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Filter>
           ) : null}
           <Filter label="Channel">
@@ -110,21 +111,21 @@ export function ActivityFeed({
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
               placeholder="any"
-              className="h-8 w-32 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+              className="h-8 w-32 rounded-md border border-zinc-300 bg-white px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-focus"
             />
           </Filter>
           <Filter label="Time">
-            <select
+            <Select
+              size="sm"
               value={range}
               onChange={(e) => selectRange(e.target.value)}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm text-zinc-900"
             >
               {TIME_RANGES.map((r) => (
                 <option key={r.key} value={r.key}>
                   {r.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </Filter>
           {(!lockedEventType && eventType) || channel || range ? (
             <Button
@@ -175,7 +176,13 @@ export function ActivityFeed({
                     ) : null}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="text-xs text-zinc-400">{timeAgo(m.timestamp)}</span>
+                    <time
+                      dateTime={m.timestamp}
+                      title={new Date(m.timestamp).toLocaleString()}
+                      className="text-xs text-zinc-400"
+                    >
+                      {timeAgo(m.timestamp)}
+                    </time>
                     <Icon name="chevronRight" size={14} className="text-zinc-300" />
                   </span>
                 </Link>

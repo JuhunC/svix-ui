@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminClient } from "@/lib/config";
 import { SvixApiError } from "@/lib/svix/errors";
-import { Alert, Badge, Card } from "@/components/ui";
+import { Alert, BackLink, Badge, Card, Detail, FOCUS_RING, cn } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { DeleteApplicationButton } from "@/components/applications/delete-application-button";
 import { PortalLinkButton } from "@/components/applications/portal-link-button";
@@ -28,12 +28,7 @@ export default async function ApplicationDetailPage({
 
   return (
     <div>
-      <Link
-        href="/console/applications"
-        className="text-sm text-zinc-500 hover:text-zinc-900"
-      >
-        ← Applications
-      </Link>
+      <BackLink href="/console/applications">Applications</BackLink>
 
       {error ? (
         <div className="mt-4">
@@ -43,22 +38,25 @@ export default async function ApplicationDetailPage({
 
       {app ? (
         <>
-          <div className="mt-2 flex items-start justify-between">
-            <div>
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
               <h1 className="text-xl font-semibold text-zinc-900">{app.name}</h1>
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-mono text-xs text-zinc-500">{app.id}</span>
                 {app.uid ? <Badge>{app.uid}</Badge> : null}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Link
                 href={`/console/applications/${encodeURIComponent(app.id)}/messages`}
-                className="inline-flex h-9 items-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                className={cn(
+                  "inline-flex h-8 items-center rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50",
+                  FOCUS_RING,
+                )}
               >
                 View deliveries
               </Link>
-              <DeleteApplicationButton appId={app.id} />
+              <DeleteApplicationButton appId={app.id} appName={app.name} />
             </div>
           </div>
 
@@ -74,7 +72,7 @@ export default async function ApplicationDetailPage({
             </dl>
           </Card>
 
-          <PortalLinkButton appId={app.id} />
+          <PortalLinkButton appId={app.id} className="mt-6" />
 
           <EndpointsSection
             apiBase={`/api/admin/apps/${encodeURIComponent(app.id)}/endpoints`}
@@ -82,15 +80,6 @@ export default async function ApplicationDetailPage({
           />
         </>
       ) : null}
-    </div>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-zinc-400">{label}</dt>
-      <dd className="mt-0.5 text-sm text-zinc-800">{value}</dd>
     </div>
   );
 }

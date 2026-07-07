@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
-import { Alert, Button, Field, Input, Label } from "@/components/ui";
+import { Alert, Button, Field, Input, Label, Select, Textarea } from "@/components/ui";
 import { Modal, ChipInput } from "@/components/overlay";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
 import type { Application, ListResponse, Message } from "@/lib/svix/types";
@@ -153,11 +153,11 @@ export function SendEventModal({
           ) : null}
 
           <Field label="Application" htmlFor="send-app">
-            <select
+            <Select
               id="send-app"
               value={appId}
               onChange={(e) => setAppId(e.target.value)}
-              className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="w-full"
             >
               {apps === null ? (
                 <option value="">Loading…</option>
@@ -169,18 +169,18 @@ export function SendEventModal({
                   </option>
                 ))
               )}
-            </select>
+            </Select>
           </Field>
 
           <div className="mb-4">
             <Label htmlFor="send-payload">Payload (JSON)</Label>
-            <textarea
+            <Textarea
               id="send-payload"
               rows={12}
               value={payload}
               onChange={(e) => setPayload(e.target.value)}
               spellCheck={false}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-xs text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="text-xs"
             />
             <p className="mt-1 text-xs text-zinc-500">
               Seeded from the event type&apos;s schema — edit before sending.

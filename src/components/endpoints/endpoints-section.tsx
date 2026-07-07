@@ -253,7 +253,7 @@ function AddEndpointModal({
         <button
           type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="text-sm font-medium text-blue-600 hover:text-blue-500"
+          className="text-sm font-medium text-accent hover:text-accent-hover"
         >
           {showAdvanced ? "Hide advanced" : "Advanced"}
         </button>

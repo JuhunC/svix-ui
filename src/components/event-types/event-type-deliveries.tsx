@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui";
+import { Card, Select } from "@/components/ui";
 import { ActivityFeed } from "@/components/activity/activity-feed";
 import { apiGet } from "@/lib/api/fetcher";
 import type { Application, ListResponse } from "@/lib/svix/types";
@@ -45,18 +45,14 @@ export function EventTypeDeliveries({ eventType }: { eventType: string }) {
         {apps && apps.length > 0 ? (
           <label className="flex shrink-0 items-center gap-2 text-sm text-zinc-600">
             Application
-            <select
-              value={appId}
-              onChange={(e) => setAppId(e.target.value)}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm text-zinc-900"
-            >
+            <Select size="sm" value={appId} onChange={(e) => setAppId(e.target.value)}>
               {apps.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
                   {a.uid ? ` (${a.uid})` : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         ) : null}
       </div>

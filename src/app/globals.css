@@ -5,12 +5,25 @@
   --foreground: #18181b;
   /* App canvas behind the sidebar dashboard (matches the example shell). */
   --canvas: #f8f9fd;
+
+  /* The single accent family. Svix's own portal theming is exactly one
+   * primary color per mode — every accent in this app derives from these. */
+  --accent: #2563eb; /* blue-600 */
+  --accent-hover: #1d4ed8; /* blue-700 */
+  --accent-soft: #eff6ff; /* blue-50 */
+  --accent-ring: #bfdbfe; /* blue-200 */
+  --accent-focus: #3b82f6; /* blue-500 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-canvas: var(--canvas);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ring: var(--accent-ring);
+  --color-accent-focus: var(--accent-focus);
   --font-sans: var(--font-mulish);
   --font-mono: var(--font-geist-mono);
 }
@@ -19,4 +32,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Native radios, checkboxes, and progress bars pick up the accent. */
+input,
+progress {
+  accent-color: var(--accent);
 }

@@ -1,9 +1,15 @@
 import * as React from "react";
+import Link from "next/link";
+import { Icon, type IconName } from "@/components/icons";
 
 /** Tiny className combiner (avoids a clsx dependency). */
 export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
+
+/** One focus treatment for every interactive primitive. */
+export const FOCUS_RING =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-focus focus-visible:ring-offset-1";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "danger" | "ghost";
@@ -16,11 +22,13 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
-  const base =
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1";
+  const base = cn(
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none",
+    FOCUS_RING,
+  );
   const sizes = { sm: "h-8 px-3 text-sm", md: "h-9 px-4 text-sm" };
   const variants = {
-    primary: "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800",
+    primary: "bg-accent text-white shadow-sm hover:bg-accent-hover",
     secondary: "border border-zinc-200 bg-white text-zinc-900 shadow-sm hover:bg-zinc-50",
     danger: "bg-red-600 text-white shadow-sm hover:bg-red-500",
     ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
@@ -41,7 +49,26 @@ export const Input = React.forwardRef<
     <input
       ref={ref}
       className={cn(
-        "h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400",
+        "h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400",
+        FOCUS_RING,
+        className,
+      )}
+      {...props}
+    />
+  );
+});
+
+export const Select = React.forwardRef<
+  HTMLSelectElement,
+  Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> & { size?: "sm" | "md" }
+>(function Select({ className, size = "md", ...props }, ref) {
+  return (
+    <select
+      ref={ref}
+      className={cn(
+        size === "sm" ? "h-8 px-2" : "h-9 px-3",
+        "rounded-md border border-zinc-300 bg-white text-sm text-zinc-900",
+        FOCUS_RING,
         className,
       )}
       {...props}
@@ -57,7 +84,8 @@ export const Textarea = React.forwardRef<
     <textarea
       ref={ref}
       className={cn(
-        "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400",
+        "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 placeholder:text-zinc-400",
+        FOCUS_RING,
         className,
       )}
       {...props}
@@ -114,10 +142,13 @@ export function Card({
 
 export function Badge({
   tone = "neutral",
+  dot = false,
   className,
   children,
 }: {
   tone?: "neutral" | "success" | "danger" | "warning" | "info";
+  /** Show a colored status dot (Stripe/Convoy-style delivery-state pill). */
+  dot?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -128,14 +159,24 @@ export function Badge({
     warning: "bg-amber-100 text-amber-800",
     info: "bg-blue-100 text-blue-800",
   };
+  const dots = {
+    neutral: "bg-zinc-400",
+    success: "bg-green-500",
+    danger: "bg-red-500",
+    warning: "bg-amber-500",
+    info: "bg-blue-500",
+  };
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
         tones[tone],
         className,
       )}
     >
+      {dot ? (
+        <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dots[tone])} />
+      ) : null}
       {children}
     </span>
   );
@@ -235,16 +276,19 @@ export function Tabs({
 }) {
   return (
     <div className="border-b border-zinc-200">
-      <nav className="-mb-px flex gap-6 overflow-x-auto">
+      <nav role="tablist" className="-mb-px flex gap-6 overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
+            role="tab"
+            aria-selected={active === t.key}
             onClick={() => onChange(t.key)}
             className={cn(
               "whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors",
+              FOCUS_RING,
               active === t.key
-                ? "border-blue-600 text-zinc-900"
+                ? "border-accent text-zinc-900"
                 : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
             )}
           >
@@ -260,11 +304,75 @@ export function Spinner({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-blue-600",
+        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-accent",
         className,
       )}
       role="status"
       aria-label="Loading"
     />
+  );
+}
+
+/** Standard first-load affordance: a centered spinner block. */
+export function LoadingState({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex justify-center py-10", className)}>
+      <Spinner className="h-5 w-5" />
+    </div>
+  );
+}
+
+/** Standard back-navigation link for detail pages. */
+export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "inline-flex items-center gap-1 rounded text-sm text-zinc-500 hover:text-zinc-900",
+        FOCUS_RING,
+      )}
+    >
+      <Icon name="chevronLeft" size={14} /> {children}
+    </Link>
+  );
+}
+
+/** Card section heading: icon + title with optional action buttons. */
+export function CardHeading({
+  icon,
+  title,
+  children,
+}: {
+  icon?: IconName;
+  title: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900">
+        {icon ? <Icon name={icon} size={17} className="text-zinc-400" /> : null}
+        {title}
+      </h2>
+      {children ? <div className="flex gap-2">{children}</div> : null}
+    </div>
+  );
+}
+
+/** Label/value pair for metadata grids (dt/dd). */
+export function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wide text-zinc-400">{label}</dt>
+      <dd className="mt-0.5 truncate text-sm text-zinc-800">{value}</dd>
+    </div>
+  );
+}
+
+/** Announced "Saved" confirmation next to a save button. */
+export function SavedIndicator({ show }: { show: boolean }) {
+  return (
+    <span role="status" aria-live="polite" className="text-xs text-green-600">
+      {show ? "Saved" : ""}
+    </span>
   );
 }

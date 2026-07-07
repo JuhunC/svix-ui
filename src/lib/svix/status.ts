@@ -31,3 +31,15 @@ export const ATTEMPT_STATUSES = [
 export function isFailed(attempt: Pick<MessageAttempt, "status">): boolean {
   return attempt.status === 2;
 }
+
+/**
+ * Tint class for a raw HTTP response code (Stripe/ngrok-style): operators
+ * pattern-match on the code, so color it by class. 0/undefined = no response.
+ */
+export function httpCodeTone(code: number | undefined): string {
+  if (!code) return "text-zinc-400";
+  if (code < 300) return "text-green-700";
+  if (code < 400) return "text-zinc-500";
+  if (code < 500) return "text-amber-700";
+  return "text-red-700";
+}

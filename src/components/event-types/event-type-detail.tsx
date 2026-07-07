@@ -1,10 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Alert, Button, Card, Field, Input, Textarea } from "@/components/ui";
+import {
+  Alert,
+  BackLink,
+  Button,
+  Card,
+  Field,
+  Input,
+  LoadingState,
+  SavedIndicator,
+  Textarea,
+} from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { ConfirmDialog } from "@/components/overlay";
 import { SendEventModal } from "@/components/event-types/send-event-modal";
 import { EventTypeDeliveries } from "@/components/event-types/event-type-deliveries";
 import { ApiError, apiGet, apiSend } from "@/lib/api/fetcher";
@@ -24,6 +34,7 @@ export function EventTypeDetail({ name }: { name: string }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [sending, setSending] = useState(false);
 
   // Seed the "Send event" payload from the current (possibly edited) schema.
@@ -86,13 +97,6 @@ export function EventTypeDetail({ name }: { name: string }) {
   }
 
   async function remove() {
-    if (
-      !confirm(
-        `Permanently delete event type "${name}"? This removes it for good and cannot be undone. To hide it without deleting, tick "Archived" and save instead.`,
-      )
-    ) {
-      return;
-    }
     setBusy(true);
     try {
       await apiSend("DELETE", `${path}?expunge=true`);
@@ -100,25 +104,46 @@ export function EventTypeDetail({ name }: { name: string }) {
       router.refresh();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to delete");
+      setConfirmingDelete(false);
       setBusy(false);
     }
   }
 
-  if (loading) return <p className="text-sm text-zinc-400">Loading…</p>;
+  if (loading) return <LoadingState />;
   if (loadError) return <Alert>{loadError}</Alert>;
 
   return (
     <div>
-      <Link href="/console/event-types" className="text-sm text-zinc-500 hover:text-zinc-900">
-        ← Event types
-      </Link>
+      <BackLink href="/console/event-types">Event types</BackLink>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Delete event type permanently"
+        body={
+          <>
+            Permanently delete <span className="font-mono">{name}</span>? This
+            removes it for good and cannot be undone. To hide it without
+            deleting, tick <em>Archived</em> and save instead.
+          </>
+        }
+        confirmLabel="Delete permanently"
+        busy={busy}
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={remove}
+      />
+
       <div className="mt-2 flex items-start justify-between gap-3">
         <h1 className="font-mono text-lg text-zinc-900">{name}</h1>
         <div className="flex shrink-0 gap-2">
           <Button size="sm" onClick={() => setSending(true)}>
             <Icon name="send" size={15} /> Send event
           </Button>
-          <Button variant="danger" size="sm" onClick={remove} disabled={busy}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={busy}
+          >
             Delete permanently
           </Button>
         </div>
@@ -179,7 +204,7 @@ export function EventTypeDetail({ name }: { name: string }) {
             <Button type="submit" disabled={busy}>
               {busy ? "Saving…" : "Save changes"}
             </Button>
-            {saved ? <span className="text-xs text-green-600">Saved</span> : null}
+            <SavedIndicator show={saved} />
           </div>
         </form>
       </Card>

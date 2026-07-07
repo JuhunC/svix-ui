@@ -11,6 +11,7 @@ import {
   Field,
   Input,
   PageHeader,
+  Spinner,
 } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { usePaginatedList } from "@/lib/hooks/use-paginated-list";
@@ -116,7 +117,7 @@ export function ApplicationsView() {
 
       <div className="mt-4 flex items-center justify-center">
         {loading ? (
-          <span className="text-sm text-zinc-400">Loading…</span>
+          <Spinner />
         ) : !done && items.length > 0 ? (
           <Button variant="secondary" size="sm" onClick={loadMore}>
             Load more

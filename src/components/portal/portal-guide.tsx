@@ -152,7 +152,7 @@ export function PortalGuide() {
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="-ml-px block border-l border-transparent py-1 pl-3 text-sm text-zinc-500 hover:border-blue-500 hover:text-zinc-900"
+                    className="-ml-px block border-l border-transparent py-1 pl-3 text-sm text-zinc-500 hover:border-accent hover:text-zinc-900"
                   >
                     {s.title}
                   </a>
@@ -182,7 +182,7 @@ export function PortalGuide() {
             <p>Expose one HTTP endpoint that meets these requirements:</p>
             <ul className="ml-5 list-disc space-y-1">
               <li>Accepts <Code>POST</Code> with <Code>Content-Type: application/json</Code>.</li>
-              <li>Is reachable from the svix-server host (see <a className="text-blue-600 hover:underline" href="#firewall">Firewall &amp; private networks</a>).</li>
+              <li>Is reachable from the svix-server host (see <a className="text-accent hover:underline" href="#firewall">Firewall &amp; private networks</a>).</li>
               <li>Responds with any <strong>2xx</strong> status to acknowledge. Any other status (or a timeout) is treated as a failure and retried.</li>
               <li>Responds <strong>fast</strong> — acknowledge first (return <Code>2xx</Code>), then do slow processing asynchronously. Long handlers risk a delivery timeout and needless retries.</li>
               <li>Reads the <strong>raw request body</strong> for signature verification (see below) before parsing it as JSON.</li>
@@ -190,7 +190,7 @@ export function PortalGuide() {
             <p className="text-sm text-zinc-500">
               You can find your endpoint&apos;s URL, signing secret, and event
               subscriptions on the{" "}
-              <Link className="text-blue-600 hover:underline" href="/portal/endpoints">
+              <Link className="text-accent hover:underline" href="/portal/endpoints">
                 Endpoints
               </Link>{" "}
               page.
@@ -259,7 +259,7 @@ export function PortalGuide() {
               <li><strong>Retries:</strong> if your endpoint doesn&apos;t return a 2xx, the provider retries several times with exponential backoff over roughly a day before giving up.</li>
               <li><strong>Idempotency:</strong> the same event can be delivered more than once (a retry, or a manual replay). Deduplicate on the <Code>svix-id</Code> header — process each ID at most once.</li>
               <li><strong>Inspecting deliveries:</strong> the{" "}
-                <Link className="text-blue-600 hover:underline" href="/portal/activity">
+                <Link className="text-accent hover:underline" href="/portal/activity">
                   Activity
                 </Link>{" "}
                 page shows every delivery, the exact <em>sent payload</em>, the
@@ -275,7 +275,7 @@ export function PortalGuide() {
               Every webhook body matches the JSON Schema of its event type. Build
               and validate your handler against these. The full catalog with an
               example for each is on the{" "}
-              <Link className="text-blue-600 hover:underline" href="/portal/catalog">
+              <Link className="text-accent hover:underline" href="/portal/catalog">
                 Event catalog
               </Link>{" "}
               page.
@@ -309,7 +309,7 @@ export function PortalGuide() {
               Open your endpoint&apos;s port to the svix-server host&apos;s egress
               IP only (ask your provider for it — don&apos;t open it to the whole
               internet). Then verify the delivery source IP on the{" "}
-              <Link className="text-blue-600 hover:underline" href="/portal/activity">
+              <Link className="text-accent hover:underline" href="/portal/activity">
                 Activity
               </Link>{" "}
               page matches.
@@ -337,7 +337,7 @@ export function PortalGuide() {
             <ol className="ml-5 list-decimal space-y-2">
               <li>Run a receiver that verifies signatures — the Node or Python snippet above is a complete, working example. Point it at a port your provider can reach.</li>
               <li>On the{" "}
-                <Link className="text-blue-600 hover:underline" href="/portal/endpoints">
+                <Link className="text-accent hover:underline" href="/portal/endpoints">
                   Endpoints
                 </Link>{" "}
                 page, set your endpoint URL, copy the <Code>whsec_…</Code> signing
@@ -346,7 +346,7 @@ export function PortalGuide() {
               </li>
               <li>Trigger an event — either from your own app, or ask the provider to send a test event of that type from their console.</li>
               <li>Watch the{" "}
-                <Link className="text-blue-600 hover:underline" href="/portal/activity">
+                <Link className="text-accent hover:underline" href="/portal/activity">
                   Activity
                 </Link>{" "}
                 page: you&apos;ll see the delivery, the exact sent payload, and the
@@ -368,11 +368,11 @@ export function PortalGuide() {
             </ul>
             <p className="text-sm text-zinc-500">
               In this portal:{" "}
-              <Link className="text-blue-600 hover:underline" href="/portal/endpoints">Endpoints</Link>{" "}
+              <Link className="text-accent hover:underline" href="/portal/endpoints">Endpoints</Link>{" "}
               (URL, secret, subscriptions) ·{" "}
-              <Link className="text-blue-600 hover:underline" href="/portal/activity">Activity</Link>{" "}
+              <Link className="text-accent hover:underline" href="/portal/activity">Activity</Link>{" "}
               (deliveries &amp; payloads) ·{" "}
-              <Link className="text-blue-600 hover:underline" href="/portal/catalog">Event catalog</Link>{" "}
+              <Link className="text-accent hover:underline" href="/portal/catalog">Event catalog</Link>{" "}
               (schemas).
             </p>
           </Section>
@@ -442,7 +442,7 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+      className="inline-flex items-center gap-1 text-accent hover:underline"
     >
       {children}
       <Icon name="externalLink" size={13} />
