@@ -5,6 +5,7 @@ import { SvixApiError } from "@/lib/svix/errors";
 import { Alert, BackLink, Badge, Card, Detail, FOCUS_RING, cn } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { DeleteApplicationButton } from "@/components/applications/delete-application-button";
+import { EditApplicationName } from "@/components/applications/edit-application-name";
 import { PortalLinkButton } from "@/components/applications/portal-link-button";
 import { EndpointsSection } from "@/components/endpoints/endpoints-section";
 import type { Application } from "@/lib/svix/types";
@@ -40,7 +41,7 @@ export default async function ApplicationDetailPage({
         <>
           <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl font-semibold text-zinc-900">{app.name}</h1>
+              <EditApplicationName appId={app.id} name={app.name} />
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-mono text-xs text-zinc-500">{app.id}</span>
                 {app.uid ? <Badge>{app.uid}</Badge> : null}

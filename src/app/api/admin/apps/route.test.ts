@@ -19,7 +19,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { GET, POST } from "./route";
-import { GET as GET_ONE, DELETE } from "./[appId]/route";
+import { GET as GET_ONE, PATCH, DELETE } from "./[appId]/route";
 
 beforeAll(() => svixServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -131,5 +131,67 @@ describe("/api/admin/apps/[appId]", () => {
       params: Promise.resolve({ appId: "app_1" }),
     });
     expect(res.status).toBe(204);
+  });
+
+  it("renames an application and preserves uid, rate limit, and metadata", async () => {
+    applyAdminEnv();
+    auth.token = validOperatorToken();
+    let sentBody: Record<string, unknown> | undefined;
+    svixServer.use(
+      http.get(`${BASE}/api/v1/app/app_1`, () =>
+        HttpResponse.json({
+          id: "app_1",
+          name: "Old name",
+          uid: "cust_acme",
+          rateLimit: 100,
+          metadata: { tier: "gold" },
+          createdAt: "",
+          updatedAt: "",
+        }),
+      ),
+      http.put(`${BASE}/api/v1/app/app_1`, async ({ request }) => {
+        sentBody = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({
+          id: "app_1",
+          name: (sentBody as { name: string }).name,
+          uid: "cust_acme",
+          rateLimit: 100,
+          createdAt: "",
+          updatedAt: "",
+        });
+      }),
+    );
+    const res = await PATCH(
+      req("/api/admin/apps/app_1", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "New name" }),
+      }),
+      { params: Promise.resolve({ appId: "app_1" }) },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.name).toBe("New name");
+    // The merged PUT must carry the new name and the preserved fields.
+    expect(sentBody).toMatchObject({
+      name: "New name",
+      uid: "cust_acme",
+      rateLimit: 100,
+      metadata: { tier: "gold" },
+    });
+  });
+
+  it("rejects an empty name with 400 and does not call upstream", async () => {
+    applyAdminEnv();
+    auth.token = validOperatorToken();
+    const res = await PATCH(
+      req("/api/admin/apps/app_1", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "" }),
+      }),
+      { params: Promise.resolve({ appId: "app_1" }) },
+    );
+    expect(res.status).toBe(400);
   });
 });

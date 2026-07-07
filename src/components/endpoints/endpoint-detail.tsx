@@ -145,6 +145,9 @@ export function EndpointDetail({
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate font-mono text-lg text-zinc-900">{endpoint.url}</h1>
+          {endpoint.description ? (
+            <p className="mt-1 truncate text-sm text-zinc-500">{endpoint.description}</p>
+          ) : null}
           <div className="mt-1 flex items-center gap-2">
             {endpoint.disabled ? (
               <Badge dot tone="danger">Disabled</Badge>
@@ -185,6 +188,7 @@ export function EndpointDetail({
         {tab === "overview" ? (
           <>
             <StatsStrip base={base} />
+            <DetailsCard base={base} endpoint={endpoint} onSaved={reload} />
             <Card className="p-5">
               <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <Detail label="Created" value={formatDateTime(endpoint.createdAt)} />
@@ -229,6 +233,65 @@ export function EndpointDetail({
         {tab === "activity" ? <DeliveriesCard base={base} /> : null}
       </div>
     </div>
+  );
+}
+
+function DetailsCard({
+  base,
+  endpoint,
+  onSaved,
+}: {
+  base: string;
+  endpoint: Endpoint;
+  onSaved: () => Promise<void> | void;
+}) {
+  const [description, setDescription] = useState(endpoint.description ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await apiSend("PATCH", base, { description: description.trim() });
+      await onSaved();
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to save");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <CardHeading icon="endpoints" title="Description" />
+      <p className="mt-1 text-sm text-zinc-500">
+        A label to help you recognize this endpoint. Shown in endpoint lists and
+        activity.
+      </p>
+      <div className="mt-3 flex items-end gap-3">
+        <div className="flex-1">
+          <Field label="Description" htmlFor="ep-description">
+            <Input
+              id="ep-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. Production receiver"
+            />
+          </Field>
+        </div>
+        <div className="pb-4">
+          <Button size="sm" onClick={save} disabled={busy}>
+            {busy ? "Saving…" : "Save"}
+          </Button>
+        </div>
+        <SavedIndicator show={saved} />
+      </div>
+      {error ? <Alert>{error}</Alert> : null}
+    </Card>
   );
 }
 
