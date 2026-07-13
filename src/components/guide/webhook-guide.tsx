@@ -1,21 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
-import { Alert, Button, Card, PageHeader, Spinner } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { Alert, Card, PageHeader, Spinner } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { apiGet } from "@/lib/api/fetcher";
-import { copyToClipboard } from "@/lib/clipboard";
-import { exampleFromSchema } from "@/lib/svix/schema-example";
+import { Code, ExternalLink, Section } from "@/components/guide/helpers";
+import {
+  OperationRow,
+  anchorFor,
+  samplePayloadFor,
+} from "@/components/guide/operation-row";
+import { Playground } from "@/components/guide/playground";
 import type { EventType, ListResponse } from "@/lib/svix/types";
 
 const SECTIONS: Array<{ id: string; title: string }> = [
   { id: "overview", title: "How it works" },
+  { id: "events", title: "Events" },
+  { id: "playground", title: "Try it out" },
   { id: "receive", title: "Receive & verify" },
   { id: "headers", title: "Request headers" },
-  { id: "schemas", title: "Event payloads" },
   { id: "firewall", title: "Private networks" },
-  { id: "testing", title: "Test it" },
   { id: "resources", title: "Svix docs & links" },
 ];
 
@@ -103,8 +108,6 @@ const FIREWALL_SERVER = `# Provider side (on the svix-server host): svix-server 
 # default (SSRF protection). Whitelist your subnet or deliveries silently fail.
 SVIX_WHITELIST_SUBNETS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"`;
 
-const TEST_CURL = `curl -sS -X POST http://YOUR_HOST:8080/webhooks -d '{"ping":true}' -w "\\n%{http_code}\\n"`;
-
 export function WebhookGuide({
   eventTypes,
   eventTypesEndpoint,
@@ -119,6 +122,8 @@ export function WebhookGuide({
 }) {
   const [types, setTypes] = useState<EventType[] | null>(eventTypes ?? null);
   const [typesError, setTypesError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [seed, setSeed] = useState<{ payload: string; nonce: number } | null>(null);
 
   useEffect(() => {
     if (eventTypes || !eventTypesEndpoint) return;
@@ -135,11 +140,20 @@ export function WebhookGuide({
     };
   }, [eventTypes, eventTypesEndpoint]);
 
+  function tryIt(payload: string) {
+    setSeed((s) => ({ payload, nonce: (s?.nonce ?? 0) + 1 }));
+    document.getElementById("playground")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function openFromNav(name: string) {
+    setExpanded((e) => ({ ...e, [name]: true }));
+  }
+
   return (
     <div>
       <PageHeader
-        title="Webhook integration guide"
-        description="How to receive, verify, and test the webhooks this service sends — with copy-paste examples and the JSON payload for every event type."
+        title="Webhook reference"
+        description="Every event this service sends, with sample payloads, real signed deliveries, and an interactive playground — like Swagger, for webhooks."
       />
 
       {/* Make it obvious the webhooks are Svix-based, so integrators know
@@ -157,13 +171,9 @@ export function WebhookGuide({
               <ExternalLink href="https://www.standardwebhooks.com">
                 Standard Webhooks
               </ExternalLink>{" "}
-              spec. You can receive and verify them with the official{" "}
+              spec. Receive and verify them with the official{" "}
               <strong>Svix libraries</strong> for Node, Python, Go, Ruby, PHP,
-              Java, Rust, and more — everything below works the same way for any
-              Svix-powered provider.
-            </p>
-            <p className="mt-2">
-              Full docs:{" "}
+              Java, Rust, and more —{" "}
               <ExternalLink href="https://docs.svix.com/receiving/">
                 docs.svix.com/receiving
               </ExternalLink>
@@ -173,7 +183,7 @@ export function WebhookGuide({
         </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-8">
+      <div className="lg:grid lg:grid-cols-[210px_1fr] lg:gap-8">
         <nav aria-label="On this page" className="hidden lg:block">
           <div className="sticky top-6">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
@@ -188,6 +198,21 @@ export function WebhookGuide({
                   >
                     {s.title}
                   </a>
+                  {s.id === "events" && types && types.length > 0 ? (
+                    <ul className="space-y-0.5 py-0.5">
+                      {types.map((t) => (
+                        <li key={t.name}>
+                          <a
+                            href={`#${anchorFor(t.name)}`}
+                            onClick={() => openFromNav(t.name)}
+                            className="-ml-px block truncate border-l border-transparent py-0.5 pl-6 font-mono text-xs text-zinc-400 hover:border-accent hover:text-zinc-800"
+                          >
+                            {t.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -201,6 +226,43 @@ export function WebhookGuide({
               <li>Every request is <strong>signed</strong>. Verify it, then reply with any <Code>2xx</Code> quickly.</li>
               <li>Delivery is <strong>at-least-once</strong> and retried on failure — dedupe on the <Code>svix-id</Code> header.</li>
             </ul>
+          </Section>
+
+          <Section id="events" title="Events">
+            <p>
+              Every event type this service can send. Expand one to see the
+              exact delivery — headers with a real signature, and the payload as
+              sample data or JSON Schema. <strong>Try it out</strong> loads the
+              sample into the playground below.
+            </p>
+            {typesError ? <Alert>{typesError}</Alert> : null}
+            {types === null && !typesError ? (
+              <div className="flex justify-center py-6">
+                <Spinner />
+              </div>
+            ) : null}
+            {types && types.length === 0 ? (
+              <Card className="p-6 text-sm text-zinc-500">
+                No event types have been published yet.
+              </Card>
+            ) : null}
+            <div className="space-y-2">
+              {(types ?? []).map((et) => (
+                <OperationRow
+                  key={et.name}
+                  eventType={et}
+                  expanded={Boolean(expanded[et.name])}
+                  onToggle={() =>
+                    setExpanded((e) => ({ ...e, [et.name]: !e[et.name] }))
+                  }
+                  onTryIt={tryIt}
+                />
+              ))}
+            </div>
+          </Section>
+
+          <Section id="playground" title="Try it out">
+            <Playground seed={seed} />
           </Section>
 
           <Section id="receive" title="Receive & verify">
@@ -237,26 +299,6 @@ export function WebhookGuide({
             </div>
           </Section>
 
-          <Section id="schemas" title="Event payloads">
-            <p>Each webhook body matches its event type&apos;s JSON Schema:</p>
-            {typesError ? <Alert>{typesError}</Alert> : null}
-            {types === null && !typesError ? (
-              <div className="flex justify-center py-6">
-                <Spinner />
-              </div>
-            ) : null}
-            {types && types.length === 0 ? (
-              <Card className="p-6 text-sm text-zinc-500">
-                No event types have been published yet.
-              </Card>
-            ) : null}
-            <div className="space-y-4">
-              {(types ?? []).map((et) => (
-                <SchemaCard key={et.name} eventType={et} />
-              ))}
-            </div>
-          </Section>
-
           <Section id="firewall" title="Private networks & firewalls">
             <p>
               If your receiver is on a private network, traffic must flow both
@@ -269,26 +311,6 @@ export function WebhookGuide({
               svix-server won&apos;t even connect to a private IP without it. Share
               the second snippet with your provider if deliveries never arrive.
             </p>
-          </Section>
-
-          <Section id="testing" title="Test it">
-            <ol className="ml-5 list-decimal space-y-1">
-              <li>Run the receiver above with your endpoint&apos;s <Code>whsec_…</Code> secret.</li>
-              <li>Trigger an event (or ask your provider to send a test one).</li>
-              {portalLinks ? (
-                <li>
-                  Watch the{" "}
-                  <Link className="text-accent hover:underline" href="/portal/activity">
-                    Activity
-                  </Link>{" "}
-                  page: sent payload, your response, and status. <Code>2xx</Code> = success.
-                </li>
-              ) : (
-                <li>Check your provider&apos;s dashboard: it shows the sent payload, your response, and status.</li>
-              )}
-            </ol>
-            <p className="text-sm text-zinc-500">Quick reachability check (no signature):</p>
-            <Code label="Reachability check">{TEST_CURL}</Code>
           </Section>
 
           <Section id="resources" title="Svix docs & links">
@@ -316,15 +338,6 @@ export function WebhookGuide({
   );
 }
 
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-6">
-      <h2 className="text-lg font-semibold text-zinc-900">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-700">{children}</div>
-    </section>
-  );
-}
-
 function HeaderRow({ name, desc }: { name: string; desc: string }) {
   return (
     <tr>
@@ -334,98 +347,5 @@ function HeaderRow({ name, desc }: { name: string; desc: string }) {
   );
 }
 
-/** Inline code, or a labeled dark block with a copy button. */
-function Code({ children, label }: { children: string; label?: string }) {
-  const isBlock = children.includes("\n") || Boolean(label);
-  const [copied, setCopied] = useState(false);
-  if (!isBlock) {
-    return (
-      <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-[0.85em] text-zinc-800">
-        {children}
-      </code>
-    );
-  }
-  return (
-    <div className="mt-1">
-      {label ? (
-        <div className="rounded-t-md border border-b-0 border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-500">
-          {label}
-        </div>
-      ) : null}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={async () => setCopied(await copyToClipboard(children))}
-          className="absolute right-2 top-2 z-10 rounded bg-white/10 px-2 py-0.5 text-xs text-zinc-300 hover:bg-white/20"
-        >
-          {copied ? "Copied" : "Copy"}
-        </button>
-        <pre
-          className={`overflow-x-auto ${label ? "rounded-b-md" : "rounded-md"} bg-zinc-900 p-4 font-mono text-xs leading-relaxed text-zinc-100`}
-        >
-          {children}
-        </pre>
-      </div>
-    </div>
-  );
-}
-
-function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-1 text-accent hover:underline"
-    >
-      {children}
-      <Icon name="externalLink" size={13} />
-    </a>
-  );
-}
-
-function SchemaCard({ eventType }: { eventType: EventType }) {
-  const [view, setView] = useState<"schema" | "example">("example");
-  const schema = eventType.schemas?.["1"];
-  return (
-    <Card className="p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <span className="font-mono text-sm font-medium text-zinc-900">
-            {eventType.name}
-          </span>
-          {eventType.description ? (
-            <p className="mt-0.5 text-sm text-zinc-500">{eventType.description}</p>
-          ) : null}
-        </div>
-        {schema ? (
-          <div className="flex shrink-0 gap-1">
-            <Button
-              variant={view === "example" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setView("example")}
-            >
-              Example
-            </Button>
-            <Button
-              variant={view === "schema" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setView("schema")}
-            >
-              Schema
-            </Button>
-          </div>
-        ) : (
-          <span className="shrink-0 self-center text-xs text-zinc-400">
-            No schema published
-          </span>
-        )}
-      </div>
-      {schema ? (
-        <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-zinc-50 p-3 font-mono text-xs text-zinc-800 ring-1 ring-zinc-200">
-          {JSON.stringify(view === "schema" ? schema : exampleFromSchema(schema), null, 2)}
-        </pre>
-      ) : null}
-    </Card>
-  );
-}
+// Re-exported for callers that want to deep-link a specific event type.
+export { anchorFor, samplePayloadFor };
