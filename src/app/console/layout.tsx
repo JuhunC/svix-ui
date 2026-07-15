@@ -12,6 +12,7 @@ const NAV: NavItem[] = [
   { href: "/console", label: "Overview", icon: "dashboard", exact: true },
   { href: "/console/applications", label: "Applications", icon: "apps" },
   { href: "/console/event-types", label: "Event types", icon: "tag" },
+  { href: "/console/guide", label: "Guide", icon: "guide" },
 ];
 
 export default async function ConsoleLayout({

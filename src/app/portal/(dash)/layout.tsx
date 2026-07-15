@@ -14,7 +14,9 @@ const APP_NAV: NavItem[] = [
   { href: "/portal/guide", label: "Guide", icon: "guide" },
 ];
 
-// An endpoint-scoped link only exposes its one endpoint (plus the shared guide).
+// An endpoint-scoped link exposes only its one endpoint, plus the read-only
+// shared references (event catalog schemas + guide) — never the app-wide
+// endpoint list or activity feed.
 function scopedNav(endpointId: string): NavItem[] {
   return [
     {
@@ -22,6 +24,7 @@ function scopedNav(endpointId: string): NavItem[] {
       label: "Your endpoint",
       icon: "endpoints",
     },
+    { href: "/portal/catalog", label: "Event catalog", icon: "catalog" },
     { href: "/portal/guide", label: "Guide", icon: "guide" },
   ];
 }
