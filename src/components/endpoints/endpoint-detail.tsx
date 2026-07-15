@@ -376,6 +376,7 @@ function SubscriptionsCard({
       : null,
   );
   const [channels, setChannels] = useState<string[]>(endpoint.channels ?? []);
+  const [catalogNames, setCatalogNames] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -384,11 +385,22 @@ function SubscriptionsCard({
     setBusy(true);
     setError(null);
     setSaved(false);
+    // Drop selected event types that are no longer in the active catalog
+    // (archived or removed) — svix-server rejects a filterTypes that references
+    // an archived type. Only prune once the catalog is known.
+    const known = catalogNames ? new Set(catalogNames) : null;
+    const pruned =
+      filterTypes && known ? filterTypes.filter((t) => known.has(t)) : filterTypes;
+    const nextFilter = pruned && pruned.length > 0 ? pruned : null;
     try {
       await apiSend("PATCH", base, {
-        filterTypes: filterTypes && filterTypes.length > 0 ? filterTypes : null,
+        filterTypes: nextFilter,
         channels: channels.length > 0 ? channels : null,
       });
+      // Reflect the pruning locally so the picker matches what was saved.
+      if (pruned && filterTypes && pruned.length !== filterTypes.length) {
+        setFilterTypes(nextFilter);
+      }
       await onSaved();
       setSaved(true);
     } catch (err) {
@@ -410,6 +422,7 @@ function SubscriptionsCard({
           catalogPath={catalogPathFor(base)}
           value={filterTypes}
           onChange={setFilterTypes}
+          onCatalogLoaded={setCatalogNames}
         />
       </div>
       <div className="mt-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert, Spinner } from "@/components/ui";
+import { Alert, Badge, Spinner } from "@/components/ui";
 import { apiGet } from "@/lib/api/fetcher";
 import type { EventType, ListResponse } from "@/lib/svix/types";
 
@@ -31,10 +31,17 @@ export function EventTypePicker({
   catalogPath,
   value,
   onChange,
+  onCatalogLoaded,
 }: {
   catalogPath: string;
   value: string[] | null;
   onChange: (next: string[] | null) => void;
+  /**
+   * Called with the active (non-archived) event-type names once the catalog
+   * loads, so the parent can drop archived selections on save — svix-server
+   * rejects a filterTypes that references an archived type.
+   */
+  onCatalogLoaded?: (names: string[]) => void;
 }) {
   const [types, setTypes] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +51,9 @@ export function EventTypePicker({
     let active = true;
     apiGet<ListResponse<EventType>>(`${catalogPath}?limit=250`)
       .then((r) => {
-        if (active) setTypes(r.data);
+        if (!active) return;
+        setTypes(r.data);
+        onCatalogLoaded?.(r.data.map((t) => t.name));
       })
       .catch((e) => {
         if (active) setError(e instanceof Error ? e.message : "Failed to load");
@@ -55,11 +64,16 @@ export function EventTypePicker({
     return () => {
       active = false;
     };
-  }, [catalogPath]);
+  }, [catalogPath, onCatalogLoaded]);
 
   const all = value === null;
   const selected = value ?? [];
   const groups = groupByPrefix(types);
+  // Selected types that are no longer in the active catalog (archived or
+  // removed). Only meaningful once the catalog has loaded.
+  const catalogNames = new Set(types.map((t) => t.name));
+  const orphans =
+    !loading && !error ? selected.filter((name) => !catalogNames.has(name)) : [];
 
   function toggle(name: string) {
     onChange(
@@ -126,6 +140,25 @@ export function EventTypePicker({
                   </div>
                 </fieldset>
               ))}
+
+              {orphans.length > 0 ? (
+                <fieldset>
+                  <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Unavailable
+                  </legend>
+                  <p className="mb-1 text-xs text-amber-700">
+                    Archived or removed — dropped when you save.
+                  </p>
+                  <div className="space-y-1">
+                    {orphans.map((name) => (
+                      <div key={name} className="flex items-center gap-2 text-sm">
+                        <span className="font-mono text-zinc-400 line-through">{name}</span>
+                        <Badge tone="warning">archived</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </fieldset>
+              ) : null}
             </div>
           )}
         </div>
