@@ -1,0 +1,142 @@
+name: Screenshots
+
+# Runs after a new image is published, capturing screenshots of the actual
+# published container so each release has an up-to-date visual reference.
+on:
+  workflow_run:
+    workflows: ["Publish image"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  screenshots:
+    name: Capture UI screenshots from the published image
+    runs-on: ubuntu-latest
+    # Only after a successful main-branch publish (which refreshes the :latest
+    # tag this job pulls) — or when run manually. Tag publishes don't move
+    # :latest, and the preceding main push already triggers this.
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      SVIX_JWT_SECRET: screenshot-secret
+      SVIX_UI_SESSION_SECRET: screenshot-session-secret-0123456789
+      SVIX_UI_OPERATOR_USERNAME: admin
+      SVIX_UI_OPERATOR_PASSWORD: screenshot-pass-2c7b
+      APP_UID: demo
+      IMAGE: ghcr.io/${{ github.repository_owner }}/svix-ui:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start svix-server
+        run: |
+          docker run -d --name svix-server --network host \
+            -e WAIT_FOR=true \
+            -e SVIX_DB_DSN=postgresql://postgres:postgres@localhost:5432/postgres \
+            -e SVIX_REDIS_DSN=redis://localhost:6379 \
+            -e SVIX_JWT_SECRET=$SVIX_JWT_SECRET \
+            -e SVIX_QUEUE_TYPE=redis \
+            -e SVIX_CACHE_TYPE=redis \
+            svix/svix-server:latest
+
+      - name: Wait for svix-server
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8071/api/v1/health || true)
+            if [ "$code" = "200" ] || [ "$code" = "204" ]; then echo healthy; exit 0; fi
+            sleep 2
+          done
+          docker logs svix-server; exit 1
+
+      - name: Generate admin token
+        run: |
+          TOKEN=$(docker exec svix-server svix-server jwt generate | tr -d '\r' | awk '{print $NF}')
+          echo "::add-mask::$TOKEN"
+          echo "SVIX_ADMIN_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Seed demo data
+        run: |
+          A=http://localhost:8071/api/v1
+          H="Authorization: Bearer $SVIX_ADMIN_TOKEN"
+          curl -s -X POST "$A/app/" -H "$H" -H 'content-type: application/json' \
+            -d "{\"name\":\"Acme Inc.\",\"uid\":\"$APP_UID\"}" >/dev/null
+          curl -s -X POST "$A/event-type/" -H "$H" -H 'content-type: application/json' \
+            -d '{"name":"user.created","description":"A new user signed up","schemas":{"1":{"type":"object","properties":{"id":{"type":"string"},"email":{"type":"string","format":"email"},"plan":{"type":"string","enum":["free","pro"]}},"required":["id","email"]}}}' >/dev/null
+          curl -s -X POST "$A/event-type/" -H "$H" -H 'content-type: application/json' \
+            -d '{"name":"invoice.paid","description":"An invoice was paid"}' >/dev/null
+          curl -s -X POST "$A/app/$APP_UID/endpoint/" -H "$H" -H 'content-type: application/json' \
+            -d '{"url":"https://example.com/webhooks","description":"Production receiver","filterTypes":["user.created","invoice.paid"]}' >/dev/null
+          for i in 1 2 3; do
+            curl -s -X POST "$A/app/$APP_UID/msg/" -H "$H" -H 'content-type: application/json' \
+              -d "{\"eventType\":\"user.created\",\"eventId\":\"evt_$i\",\"payload\":{\"id\":\"user_$i\",\"email\":\"u$i@acme.test\",\"plan\":\"pro\"}}" >/dev/null
+          done
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run svix-ui image
+        run: |
+          docker pull "$IMAGE"
+          docker run -d --name svix-ui --network host \
+            -e SVIX_SERVER_URL=http://localhost:8071 \
+            -e SVIX_ADMIN_TOKEN=$SVIX_ADMIN_TOKEN \
+            -e SVIX_UI_SESSION_SECRET=$SVIX_UI_SESSION_SECRET \
+            -e SVIX_UI_OPERATOR_USERNAME=$SVIX_UI_OPERATOR_USERNAME \
+            -e SVIX_UI_OPERATOR_PASSWORD=$SVIX_UI_OPERATOR_PASSWORD \
+            -e SVIX_UI_PUBLIC_URL=http://localhost:3000 \
+            "$IMAGE"
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/login || true)
+            if [ "$code" = "200" ]; then echo "svix-ui up"; exit 0; fi
+            sleep 2
+          done
+          docker logs svix-ui; exit 1
+
+      - name: Install Playwright
+        run: |
+          npm i --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+
+      - name: Capture screenshots
+        env:
+          SVIX_UI_URL: http://localhost:3000
+        run: node scripts/screenshots.mjs
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svix-ui-screenshots
+          path: screenshots/
+          if-no-files-found: warn
+
+      - name: svix-ui log on failure
+        if: failure()
+        run: docker logs svix-ui || true
