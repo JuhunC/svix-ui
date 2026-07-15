@@ -43,7 +43,6 @@ jobs:
       SVIX_UI_OPERATOR_USERNAME: admin
       SVIX_UI_OPERATOR_PASSWORD: screenshot-pass-2c7b
       APP_UID: demo
-      IMAGE: ghcr.io/${{ github.repository_owner }}/svix-ui:latest
     steps:
       - uses: actions/checkout@v4
 
@@ -103,6 +102,9 @@ jobs:
 
       - name: Run svix-ui image
         run: |
+          # GHCR repository names must be lowercase; the owner login can be mixed case.
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/svix-ui:latest"
+          echo "Using image $IMAGE"
           docker pull "$IMAGE"
           docker run -d --name svix-ui --network host \
             -e SVIX_SERVER_URL=http://localhost:8071 \
