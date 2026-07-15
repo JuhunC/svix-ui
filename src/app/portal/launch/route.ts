@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { loadServerConfig } from "@/lib/config";
-import { sealPortalSession } from "@/lib/auth/portal";
+import { decryptLaunchScope, sealPortalSession } from "@/lib/auth/portal";
 import { isRequestSecure } from "@/lib/auth/server";
 import { PORTAL_COOKIE, portalCookieOptions } from "@/lib/api/portal";
 
@@ -39,6 +39,28 @@ export async function GET(req: NextRequest) {
     secret = loadServerConfig().sessionSecret;
   } catch {
     return redirectTo("/portal/expired");
+  }
+
+  // Per-endpoint link: an AES-GCM blob carrying the token + endpoint scope.
+  // The token is never exposed in the URL, so it can't be stripped of its
+  // endpoint restriction and replayed for app-wide access.
+  const scopeBlob = req.nextUrl.searchParams.get("s");
+  if (scopeBlob) {
+    const scope = decryptLaunchScope(scopeBlob, secret);
+    if (!scope) return redirectTo("/portal/expired");
+    const ttlMs = Math.min(scope.exp - Date.now(), MAX_TTL * 1000);
+    if (ttlMs <= 0) return redirectTo("/portal/expired");
+    const sealed = sealPortalSession(
+      { token: scope.token, appId: scope.appId, endpointId: scope.endpointId, exp: scope.exp },
+      secret,
+    );
+    const res = redirectTo(`/portal/endpoints/${encodeURIComponent(scope.endpointId)}`);
+    res.cookies.set(
+      PORTAL_COOKIE,
+      sealed,
+      portalCookieOptions(Math.floor(ttlMs / 1000), isRequestSecure(req)),
+    );
+    return res;
   }
 
   const token = req.nextUrl.searchParams.get("token");

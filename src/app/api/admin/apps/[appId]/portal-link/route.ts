@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAdmin } from "@/lib/api/admin";
 import { loadServerConfig } from "@/lib/config";
+import { encryptLaunchScope } from "@/lib/auth/portal";
 
 const Capability = z.enum([
   "ViewBase",
@@ -19,6 +20,10 @@ const Body = z
     readOnly: z.boolean().optional(),
     // Optional deep-link target within the portal, e.g. an endpoint page.
     to: z.string().optional(),
+    // When set, mint an endpoint-SCOPED link: the resulting portal session may
+    // only see this endpoint, enforced by the BFF. The token is encrypted into
+    // the launch blob so the scope cannot be stripped.
+    endpointId: z.string().min(1).optional(),
   })
   .optional();
 
@@ -46,8 +51,33 @@ export const POST = withAdmin<{ appId: string }>(async ({ req, client, params })
     expiry,
   });
 
-  const to = safePortalTarget(opts.to);
   const publicUrl = loadServerConfig().publicUrl;
+
+  // Endpoint-scoped link: encrypt the token + endpoint into an opaque blob so
+  // the consumer cannot read the token, drop the scope, and go app-wide. The
+  // client assembles the launch URL as `${origin}/portal/launch?s=${scoped}`.
+  if (opts.endpointId) {
+    const secret = loadServerConfig().sessionSecret;
+    const scoped = encryptLaunchScope(
+      {
+        token: access.token,
+        appId: params.appId,
+        endpointId: opts.endpointId,
+        exp: Date.now() + expiry * 1000,
+      },
+      secret,
+    );
+    return NextResponse.json({
+      app: params.appId,
+      exp: expiry,
+      endpointId: opts.endpointId,
+      scoped,
+      link: publicUrl ? `${publicUrl}/portal/launch?s=${scoped}` : null,
+      expiresInSeconds: expiry,
+    });
+  }
+
+  const to = safePortalTarget(opts.to);
   const params2 = new URLSearchParams({
     token: access.token,
     app: params.appId,

@@ -7,7 +7,7 @@ import {
   applyAdminEnv,
   clearAdminEnv,
 } from "../../../../tests/helpers/admin-route";
-import { openPortalSession } from "@/lib/auth/portal";
+import { encryptLaunchScope, openPortalSession } from "@/lib/auth/portal";
 
 afterEach(() => clearAdminEnv());
 
@@ -58,5 +58,36 @@ describe("GET /portal/launch", () => {
     );
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("/portal");
+  });
+
+  it("opens an encrypted endpoint scope (`s`) into an endpoint-scoped session", async () => {
+    applyAdminEnv();
+    const blob = encryptLaunchScope(
+      { token: "sk_app", appId: "app_9", endpointId: "ep_7", exp: Date.now() + 3_600_000 },
+      ADMIN_ENV.SVIX_UI_SESSION_SECRET,
+    );
+    const res = await GET(
+      new NextRequest(`http://0.0.0.0:3000/portal/launch?s=${encodeURIComponent(blob)}`),
+    );
+    expect(res.status).toBe(307);
+    // Deep-links straight to the one endpoint.
+    expect(res.headers.get("location")).toBe("/portal/endpoints/ep_7");
+    const opened = openPortalSession(
+      res.cookies.get("svix_ui_portal")!.value,
+      ADMIN_ENV.SVIX_UI_SESSION_SECRET,
+    );
+    expect(opened?.appId).toBe("app_9");
+    expect(opened?.endpointId).toBe("ep_7");
+    expect(opened?.token).toBe("sk_app");
+  });
+
+  it("redirects to /portal/expired for a tampered scope blob", async () => {
+    applyAdminEnv();
+    const res = await GET(
+      new NextRequest("http://0.0.0.0:3000/portal/launch?s=not-a-valid-blob"),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("/portal/expired");
+    expect(res.cookies.get("svix_ui_portal")).toBeUndefined();
   });
 });

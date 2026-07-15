@@ -13,6 +13,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 export function PortalLinkButton({
   appId,
   to,
+  endpointId,
   title = "Consumer App Portal",
   description = "Generate a magic link your customer opens to self-serve their endpoints, secret, subscriptions, and replays.",
   buttonLabel = "Create portal link",
@@ -20,6 +21,8 @@ export function PortalLinkButton({
 }: {
   appId: string;
   to?: string;
+  /** When set, the link is scoped to this one endpoint (nothing else visible). */
+  endpointId?: string;
   title?: string;
   description?: string;
   buttonLabel?: string;
@@ -35,23 +38,35 @@ export function PortalLinkButton({
     setError(null);
     setCopied(false);
     try {
+      const body: { to?: string; endpointId?: string } = {};
+      if (endpointId) body.endpointId = endpointId;
+      else if (to) body.to = to;
       const res = await apiSend<{
-        token: string;
+        token?: string;
         app: string;
         exp: number;
-        to: string | null;
+        to?: string | null;
         link: string | null;
-      }>("POST", `/api/admin/apps/${encodeURIComponent(appId)}/portal-link`, to ? { to } : {});
+        scoped?: string;
+      }>("POST", `/api/admin/apps/${encodeURIComponent(appId)}/portal-link`, body);
       // Prefer a server-built link (set only when SVIX_UI_PUBLIC_URL is
       // configured); otherwise build it from this browser's origin, which is
       // the host the operator — and the customer — actually use.
-      const query = new URLSearchParams({
-        token: res.token,
-        app: res.app,
-        exp: String(res.exp),
-      });
-      if (res.to) query.set("to", res.to);
-      setLink(res.link ?? `${window.location.origin}/portal/launch?${query.toString()}`);
+      if (res.scoped) {
+        // Endpoint-scoped: the token is inside the encrypted `s` blob.
+        setLink(
+          res.link ??
+            `${window.location.origin}/portal/launch?s=${encodeURIComponent(res.scoped)}`,
+        );
+      } else {
+        const query = new URLSearchParams({
+          token: res.token ?? "",
+          app: res.app,
+          exp: String(res.exp),
+        });
+        if (res.to) query.set("to", res.to);
+        setLink(res.link ?? `${window.location.origin}/portal/launch?${query.toString()}`);
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to create link");
     } finally {

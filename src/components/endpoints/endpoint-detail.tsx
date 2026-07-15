@@ -204,9 +204,9 @@ export function EndpointDetail({
             {consoleAppId && consoleEndpointId ? (
               <PortalLinkButton
                 appId={consoleAppId}
-                to={`/portal/endpoints/${encodeURIComponent(consoleEndpointId)}`}
+                endpointId={consoleEndpointId}
                 title="Consumer portal link"
-                description="Share a magic link that opens this endpoint's settings in the App Portal for your customer."
+                description="Share a magic link scoped to this one endpoint — the customer sees only its settings, deliveries, and secret, and nothing else in the application."
                 buttonLabel="Create link"
               />
             ) : null}
