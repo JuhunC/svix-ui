@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   Alert,
   BackLink,
@@ -36,6 +36,7 @@ import type {
   EndpointSecret,
   EndpointStats,
   EndpointTransformation,
+  ListResponse,
   Message,
   MessageAttempt,
 } from "@/lib/svix/types";
@@ -189,16 +190,7 @@ export function EndpointDetail({
           <>
             <StatsStrip base={base} />
             <DetailsCard base={base} endpoint={endpoint} onSaved={reload} />
-            <Card className="p-5">
-              <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <Detail label="Created" value={formatDateTime(endpoint.createdAt)} />
-                <Detail label="Updated" value={formatDateTime(endpoint.updatedAt)} />
-                <Detail
-                  label="Rate limit"
-                  value={endpoint.rateLimit ? `${endpoint.rateLimit}/s` : "—"}
-                />
-              </dl>
-            </Card>
+            <MetadataCard base={base} endpoint={endpoint} />
             <SecretCard base={base} />
             <SubscriptionsCard base={base} endpoint={endpoint} onSaved={reload} />
             {consoleAppId && consoleEndpointId ? (
@@ -439,6 +431,56 @@ function SubscriptionsCard({
         </Button>
         <SavedIndicator show={saved} />
       </div>
+    </Card>
+  );
+}
+
+function MetadataCard({ base, endpoint }: { base: string; endpoint: Endpoint }) {
+  // undefined = still loading, null = none / not available, string = timestamp.
+  const [lastSuccess, setLastSuccess] = useState<string | null | undefined>(undefined);
+  const [lastFail, setLastFail] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    // Attempts come back newest-first, so the first of each status filter is the
+    // most recent success / failure for this endpoint.
+    const load = (status: number, set: (v: string | null) => void) =>
+      apiGet<ListResponse<MessageAttempt>>(`${base}/attempts?status=${status}&limit=1`)
+        .then((r) => {
+          if (active) set(r.data[0]?.timestamp ?? null);
+        })
+        .catch(() => {
+          if (active) set(null);
+        });
+    void load(0, setLastSuccess);
+    void load(2, setLastFail);
+    return () => {
+      active = false;
+    };
+  }, [base]);
+
+  const timeValue = (v: string | null | undefined): ReactNode => {
+    if (v === undefined) return "…";
+    if (!v) return "Never";
+    return (
+      <time dateTime={v} title={formatDateTime(v)}>
+        {formatDateTime(v)}
+      </time>
+    );
+  };
+
+  return (
+    <Card className="p-5">
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <Detail label="Created" value={formatDateTime(endpoint.createdAt)} />
+        <Detail label="Updated" value={formatDateTime(endpoint.updatedAt)} />
+        <Detail
+          label="Rate limit"
+          value={endpoint.rateLimit ? `${endpoint.rateLimit}/s` : "—"}
+        />
+        <Detail label="Last succeeded" value={timeValue(lastSuccess)} />
+        <Detail label="Last failed" value={timeValue(lastFail)} />
+      </dl>
     </Card>
   );
 }
