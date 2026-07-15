@@ -26,6 +26,11 @@ services:
       # external URL) when behind a reverse proxy. Do NOT leave it as localhost
       # if you reach svix-ui from another machine — portal links would 404.
       SVIX_UI_PUBLIC_URL: ${SVIX_UI_PUBLIC_URL:-}
+      # Public IP that svix-server's webhook deliveries come from — shown on the
+      # Guide page so consumers know which source IP to allow through their
+      # firewall. With svix-server in Docker this is the Docker HOST's public IP
+      # (containers masquerade to the host), not the container's 172.x address.
+      SVIX_UI_WEBHOOK_SOURCE_IP: ${SVIX_UI_WEBHOOK_SOURCE_IP:-}
     ports:
       - "3000:3000"
     restart: unless-stopped

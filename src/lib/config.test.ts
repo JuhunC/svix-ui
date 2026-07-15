@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getAdminClient, loadServerConfig, resetConfigCache } from "./config";
+import {
+  getAdminClient,
+  getGuideNetworkInfo,
+  loadServerConfig,
+  resetConfigCache,
+} from "./config";
 import { SvixClient } from "./svix/client";
 import { SvixConfigError } from "./svix/errors";
 
@@ -66,5 +71,26 @@ describe("getAdminClient", () => {
   it("returns a SvixClient bound to the configured server", () => {
     const client = getAdminClient(validEnv);
     expect(client).toBeInstanceOf(SvixClient);
+  });
+});
+
+describe("getGuideNetworkInfo", () => {
+  it("returns the configured source IP and the svix-server host:port", () => {
+    const info = getGuideNetworkInfo({
+      ...validEnv,
+      SVIX_UI_WEBHOOK_SOURCE_IP: "203.0.113.10",
+    } as NodeJS.ProcessEnv);
+    expect(info.svixSourceIp).toBe("203.0.113.10");
+    expect(info.svixServerAddress).toBe("svix-server:8071");
+  });
+
+  it("omits the source IP when unset but still returns the server address", () => {
+    const info = getGuideNetworkInfo(validEnv);
+    expect(info.svixSourceIp).toBeUndefined();
+    expect(info.svixServerAddress).toBe("svix-server:8071");
+  });
+
+  it("returns an empty object (never throws) when config is invalid", () => {
+    expect(getGuideNetworkInfo({} as NodeJS.ProcessEnv)).toEqual({});
   });
 });

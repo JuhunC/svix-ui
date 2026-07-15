@@ -1,3 +1,4 @@
+import { getGuideNetworkInfo } from "@/lib/config";
 import { WebhookGuide } from "@/components/guide/webhook-guide";
 
 export const dynamic = "force-dynamic";
@@ -6,6 +7,9 @@ export const dynamic = "force-dynamic";
 // the console shell. Event types (with their schemas) come from the admin API.
 export default function ConsoleGuidePage() {
   return (
-    <WebhookGuide eventTypesEndpoint="/api/admin/event-types?with_content=true&limit=250" />
+    <WebhookGuide
+      eventTypesEndpoint="/api/admin/event-types?with_content=true&limit=250"
+      {...getGuideNetworkInfo()}
+    />
   );
 }

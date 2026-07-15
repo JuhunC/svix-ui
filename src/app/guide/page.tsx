@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAdminClient } from "@/lib/config";
+import { getAdminClient, getGuideNetworkInfo } from "@/lib/config";
 import { WebhookGuide } from "@/components/guide/webhook-guide";
 import { BrandMark } from "@/components/dashboard-shell";
 import type { EventType } from "@/lib/svix/types";
@@ -34,7 +34,7 @@ export default async function PublicGuidePage() {
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
-        <WebhookGuide eventTypes={eventTypes} />
+        <WebhookGuide eventTypes={eventTypes} {...getGuideNetworkInfo()} />
       </div>
     </main>
   );

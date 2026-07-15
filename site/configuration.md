@@ -26,6 +26,7 @@ at sign-in rather than a silent failure.
 | `SVIX_UI_OPERATOR_USERNAME` | ✅ | — | Username for the operator console login. |
 | `SVIX_UI_OPERATOR_PASSWORD` | ✅ | — | Password for the operator console login (constant-time compared). |
 | `SVIX_UI_PUBLIC_URL` | ⛔️ | request origin | Public origin of svix-ui, used to build consumer App Portal magic links. Set this when behind a reverse proxy. |
+| `SVIX_UI_WEBHOOK_SOURCE_IP` | ⛔️ | — | Public IP that svix-server's webhook deliveries come from, shown on the Guide page so consumers know which source IP to allow through their firewall. With svix-server in Docker this is the Docker **host's public IP** (containers masquerade to the host), not the container's `172.x` address. |
 | `SVIX_UI_COOKIE_SECURE` | ⛔️ | auto | Force the `Secure` flag on cookies. Default mirrors the connection (Secure over HTTPS / `X-Forwarded-Proto: https`, not over plain HTTP). Set `true` to always require HTTPS, `false` to never set Secure. |
 
 {: .note }

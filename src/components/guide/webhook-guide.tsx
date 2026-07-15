@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Alert, Card, PageHeader, Spinner } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { apiGet } from "@/lib/api/fetcher";
+import { CopyButton } from "@/components/copy-button";
 import { Code, ExternalLink, Section } from "@/components/guide/helpers";
 import {
   OperationRow,
@@ -20,6 +21,7 @@ const SECTIONS: Array<{ id: string; title: string }> = [
   { id: "playground", title: "Try it out" },
   { id: "receive", title: "Receive & verify" },
   { id: "headers", title: "Request headers" },
+  { id: "connection", title: "Connection details" },
   { id: "firewall", title: "Private networks" },
   { id: "resources", title: "Svix docs & links" },
 ];
@@ -97,12 +99,16 @@ function verify(rawBody, headers, secret) {
   return JSON.parse(rawBody);
 }`;
 
-const FIREWALL_CLIENT = `# Your side: allow inbound ONLY from the svix-server host's egress IP.
+// `ip` is the real svix-server source IP when the operator configured it,
+// else a placeholder. `8080` is an example receiver port — use your own.
+function firewallClientSnippet(ip: string): string {
+  return `# Your side: allow inbound ONLY from the svix-server source IP (port = your receiver's).
 # ufw (Debian / Ubuntu)
-sudo ufw allow from 203.0.113.10 to any port 8080 proto tcp
+sudo ufw allow from ${ip} to any port 8080 proto tcp
 
 # iptables
-sudo iptables -A INPUT -p tcp -s 203.0.113.10 --dport 8080 -j ACCEPT`;
+sudo iptables -A INPUT -p tcp -s ${ip} --dport 8080 -j ACCEPT`;
+}
 
 const FIREWALL_SERVER = `# Provider side (on the svix-server host): svix-server blocks private IPs by
 # default (SSRF protection). Whitelist your subnet or deliveries silently fail.
@@ -112,6 +118,8 @@ export function WebhookGuide({
   eventTypes,
   eventTypesEndpoint,
   portalLinks = false,
+  svixSourceIp,
+  svixServerAddress,
 }: {
   /** Pre-loaded event types (public page renders these server-side). */
   eventTypes?: EventType[];
@@ -119,6 +127,10 @@ export function WebhookGuide({
   eventTypesEndpoint?: string;
   /** Show in-portal cross-links (only meaningful for a signed-in consumer). */
   portalLinks?: boolean;
+  /** Public source IP webhook deliveries come from (operator-configured). */
+  svixSourceIp?: string;
+  /** Internal host:port svix-ui uses to reach svix-server (operator note). */
+  svixServerAddress?: string;
 }) {
   const [types, setTypes] = useState<EventType[] | null>(eventTypes ?? null);
   const [typesError, setTypesError] = useState<string | null>(null);
@@ -148,6 +160,9 @@ export function WebhookGuide({
   function openFromNav(name: string) {
     setExpanded((e) => ({ ...e, [name]: true }));
   }
+
+  const sourceIp = svixSourceIp?.trim() || undefined;
+  const sourceIpDisplay = sourceIp ?? "<svix-server public IP>";
 
   return (
     <div>
@@ -299,12 +314,84 @@ export function WebhookGuide({
             </div>
           </Section>
 
+          <Section id="connection" title="Connection details">
+            <p>
+              The concrete network values for delivery. <strong>svix-server is
+              the sender</strong> — it opens an outbound HTTPS connection <em>to
+              your receiver</em>. So you expose a URL and allow svix-server&apos;s
+              source IP through your firewall.
+            </p>
+
+            <div className="rounded-lg border border-accent-ring bg-accent-soft p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Webhook source IP — svix-server
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="font-mono text-sm text-zinc-900">{sourceIpDisplay}</span>
+                {sourceIp ? <CopyButton value={sourceIp} label="Copy source IP" /> : null}
+              </div>
+              <p className="mt-1 text-xs text-zinc-600">
+                Allow this IP <strong>inbound</strong> to your receiver&apos;s port.
+                It&apos;s the same IP you&apos;ll see as the source of incoming
+                webhook requests. The outbound (source) port is ephemeral — don&apos;t
+                filter on it.
+              </p>
+              {sourceIp ? null : (
+                <p className="mt-2 text-xs text-amber-700">
+                  Not configured. Ask your provider, or set{" "}
+                  <span className="font-mono">SVIX_UI_WEBHOOK_SOURCE_IP</span> on
+                  svix-ui to show it here.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+              <strong className="text-zinc-800">Running svix-server in Docker?</strong>{" "}
+              Outbound webhook traffic leaves through the Docker host, so the source
+              IP is the <strong>host&apos;s public IP</strong> — not the container&apos;s{" "}
+              <span className="font-mono">172.x.x.x</span> address. Find it by running{" "}
+              <Code>{"curl -s https://ifconfig.me"}</Code> on the host that runs
+              svix-server (or use the VM&apos;s public IP from your cloud console).
+            </div>
+
+            <p className="pt-1 font-medium text-zinc-800">What your receiver must expose</p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[34rem] border-collapse text-sm">
+                <thead className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500">
+                  <tr>
+                    <th className="py-2 pr-4 font-medium">Setting</th>
+                    <th className="py-2 pr-4 font-medium">Value</th>
+                    <th className="py-2 font-medium">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  <ConfigRow setting="Endpoint URL" value="https://<your-host>:<port>/<path>" note="What you register as the endpoint (e.g. on the Endpoints page)." />
+                  <ConfigRow setting="Host / IP" value="your public DNS name or IP" note="Must be reachable from the svix-server source IP above." />
+                  <ConfigRow setting="Port" value="443 (HTTPS), or your own" note="Open it inbound from the source IP. Example snippets below use 8080." />
+                  <ConfigRow setting="Protocol" value="HTTPS (recommended)" note="Plain HTTP is allowed on trusted private networks." />
+                  <ConfigRow setting="Method" value="POST" note="Every delivery is a POST." />
+                  <ConfigRow setting="Content-Type" value="application/json" note="Body is the raw JSON payload — verify the raw bytes." />
+                </tbody>
+              </table>
+            </div>
+
+            {svixServerAddress ? (
+              <p className="text-xs text-zinc-500">
+                Operator note: svix-ui reaches svix-server at{" "}
+                <Code>{svixServerAddress}</Code> — the internal API address, not the
+                value consumers allowlist.
+              </p>
+            ) : null}
+          </Section>
+
           <Section id="firewall" title="Private networks & firewalls">
             <p>
               If your receiver is on a private network, traffic must flow both
               ways — configure <em>both</em> sides:
             </p>
-            <Code label="1. Your side — allow inbound from the svix-server host IP">{FIREWALL_CLIENT}</Code>
+            <Code label="1. Your side — allow inbound from the svix-server source IP">
+              {firewallClientSnippet(sourceIp ?? "203.0.113.10")}
+            </Code>
             <Code label="2. Provider side — let svix-server reach a private IP">{FIREWALL_SERVER}</Code>
             <p className="text-sm text-zinc-500">
               Most private-network failures are the provider-side whitelist:
@@ -343,6 +430,16 @@ function HeaderRow({ name, desc }: { name: string; desc: string }) {
     <tr>
       <td className="py-2 pr-4 align-top font-mono text-xs text-zinc-900">{name}</td>
       <td className="py-2 align-top text-zinc-600">{desc}</td>
+    </tr>
+  );
+}
+
+function ConfigRow({ setting, value, note }: { setting: string; value: string; note: string }) {
+  return (
+    <tr>
+      <td className="py-2 pr-4 align-top font-medium text-zinc-800">{setting}</td>
+      <td className="py-2 pr-4 align-top font-mono text-xs text-zinc-900">{value}</td>
+      <td className="py-2 align-top text-zinc-600">{note}</td>
     </tr>
   );
 }
